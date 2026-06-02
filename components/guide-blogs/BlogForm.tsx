@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BlogStatus, BlogVisibility } from '@prisma/client';
+import { BlogStatus, BlogVisibility } from '@/types/blog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,9 +58,9 @@ export default function BlogForm({ initialData, mode }: BlogFormProps) {
   const [coverImageUrl, setCoverImageUrl] = useState(
     initialData?.coverImageUrl ?? '',
   );
-  const [status, setStatus] = useState<BlogStatus>(
-    initialData?.status ?? 'DRAFT',
-  );
+const [status, setStatus] = useState<BlogStatus>(
+  initialData?.status ?? BlogStatus.DRAFT,
+);
   const [visibleTo, setVisibleTo] = useState<BlogVisibility[]>(
     initialData?.visibleTo ?? [],
   );
