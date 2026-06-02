@@ -32,16 +32,11 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
-import * as pdfjsLib from 'pdfjs-dist';
+
 
 // Use the worker that ships with pdfjs-dist — resolves via Next.js/Webpack,
 // no CDN dependency, no version-mismatch 404s.
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.mjs',
-    import.meta.url,
-  ).toString();
-}
+
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -166,6 +161,12 @@ async function parseCSVText(text: string): Promise<BulkLeadRow[]> {
 }
 
 async function parsePDFFile(file: File): Promise<BulkLeadRow[]> {
+  const pdfjsLib = await import('pdfjs-dist');
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url,
+).toString();
   const arrayBuffer = await file.arrayBuffer();
 
   const pdf = await pdfjsLib.getDocument({
