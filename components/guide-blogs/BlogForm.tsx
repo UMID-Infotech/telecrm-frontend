@@ -282,7 +282,7 @@ const [status, setStatus] = useState<BlogStatus>(
 
                 <div className="flex flex-col gap-2">
                   <Button
-                    onClick={() => handleSubmit('DRAFT')}
+                    onClick={() => handleSubmit(BlogStatus.DRAFT)}
                     disabled={isLoading}
                     variant="outline"
                     className="w-full justify-start gap-2 text-slate-700 border-slate-200 hover:bg-slate-50"
@@ -295,7 +295,7 @@ const [status, setStatus] = useState<BlogStatus>(
                     Save as Draft
                   </Button>
                   <Button
-                    onClick={() => handleSubmit('PUBLISHED')}
+                    onClick={() => handleSubmit(BlogStatus.PUBLISHED)}
                     disabled={isLoading}
                     className="w-full justify-start gap-2 bg-slate-900 hover:bg-slate-800 text-white"
                   >
