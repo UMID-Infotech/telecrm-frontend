@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BlogStatus, BlogVisibility } from '@prisma/client';
+import { BlogStatus, BlogVisibility } from '@/types/blog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,9 +58,9 @@ export default function BlogForm({ initialData, mode }: BlogFormProps) {
   const [coverImageUrl, setCoverImageUrl] = useState(
     initialData?.coverImageUrl ?? '',
   );
-  const [status, setStatus] = useState<BlogStatus>(
-    initialData?.status ?? 'DRAFT',
-  );
+const [status, setStatus] = useState<BlogStatus>(
+  initialData?.status ?? BlogStatus.DRAFT,
+);
   const [visibleTo, setVisibleTo] = useState<BlogVisibility[]>(
     initialData?.visibleTo ?? [],
   );
@@ -282,7 +282,7 @@ export default function BlogForm({ initialData, mode }: BlogFormProps) {
 
                 <div className="flex flex-col gap-2">
                   <Button
-                    onClick={() => handleSubmit('DRAFT')}
+                    onClick={() => handleSubmit(BlogStatus.DRAFT)}
                     disabled={isLoading}
                     variant="outline"
                     className="w-full justify-start gap-2 text-slate-700 border-slate-200 hover:bg-slate-50"
@@ -295,7 +295,7 @@ export default function BlogForm({ initialData, mode }: BlogFormProps) {
                     Save as Draft
                   </Button>
                   <Button
-                    onClick={() => handleSubmit('PUBLISHED')}
+                    onClick={() => handleSubmit(BlogStatus.PUBLISHED)}
                     disabled={isLoading}
                     className="w-full justify-start gap-2 bg-slate-900 hover:bg-slate-800 text-white"
                   >

@@ -1,6 +1,6 @@
-// teleCRM/app/login/page.tsx
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { saveAuth } from '@/lib/auth';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const passwordSet = searchParams.get('passwordSet');
@@ -25,6 +25,7 @@ export default function LoginPage() {
       });
 
       const { accessToken, accessLevel, isSuperAdmin } = res.data;
+
       saveAuth(accessToken, accessLevel);
 
       if (isSuperAdmin || accessLevel === 'L0') {
@@ -47,24 +48,36 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle>Login</CardTitle>
         </CardHeader>
+
         <CardContent>
           {passwordSet && (
             <p className="text-green-600 text-sm text-center mb-4">
               ✅ Password set successfully! Please login with your new password.
             </p>
           )}
+
           <form onSubmit={handleLogin} className="space-y-4">
             <Input name="email" placeholder="Email" required />
+
             <Input
               name="password"
               type="password"
               placeholder="Password"
               required
             />
+
             <Button className="w-full">Login</Button>
           </form>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
