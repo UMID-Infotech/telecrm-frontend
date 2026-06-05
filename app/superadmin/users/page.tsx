@@ -2,13 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  CheckCircle,
-  XCircle,
-  MoreHorizontal,
-  Trash2,
-  AlertTriangle,
-} from "lucide-react";
+import { CheckCircle, XCircle, MoreHorizontal, Trash2, AlertTriangle } from "lucide-react";
 import { api } from "@/lib/api";
 import {
   DropdownMenu,
@@ -91,8 +85,7 @@ export default function SuperAdminUsersPage() {
       fetchUsers();
     } catch (err: any) {
       setDeleteError(
-        err?.response?.data?.message ??
-          "Something went wrong. Please try again.",
+        err?.response?.data?.message ?? "Something went wrong. Please try again."
       );
     } finally {
       setDeleteLoading(false);
@@ -105,9 +98,7 @@ export default function SuperAdminUsersPage() {
     <div className="max-w-5xl mx-auto space-y-5">
       <div>
         <h1 className="text-xl font-semibold text-white">All Users</h1>
-        <p className="text-sm text-zinc-500 mt-1">
-          Every user across all organizations
-        </p>
+        <p className="text-sm text-zinc-500 mt-1">Every user across all organizations</p>
       </div>
 
       {loading ? (
@@ -124,27 +115,20 @@ export default function SuperAdminUsersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-800">
-                <th className="text-left px-4 py-3 text-zinc-500 font-medium">
-                  User
-                </th>
+                <th className="text-left px-4 py-3 text-zinc-500 font-medium">User</th>
                 <th className="text-left px-4 py-3 text-zinc-500 font-medium hidden md:table-cell">
                   Organization
                 </th>
                 <th className="text-left px-4 py-3 text-zinc-500 font-medium hidden sm:table-cell">
                   Level
                 </th>
-                <th className="text-left px-4 py-3 text-zinc-500 font-medium">
-                  Status
-                </th>
+                <th className="text-left px-4 py-3 text-zinc-500 font-medium">Status</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {users.map((user) => (
-                <tr
-                  key={user.id}
-                  className="hover:bg-zinc-800/40 transition-colors"
-                >
+                <tr key={user.id} className="hover:bg-zinc-800/40 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-300">
@@ -152,9 +136,7 @@ export default function SuperAdminUsersPage() {
                       </div>
                       <div>
                         <p className="text-white font-medium">{user.email}</p>
-                        <p className="text-zinc-600 text-xs">
-                          {user.designation}
-                        </p>
+                        <p className="text-zinc-600 text-xs">{user.designation}</p>
                       </div>
                     </div>
                   </td>
@@ -223,9 +205,7 @@ export default function SuperAdminUsersPage() {
             </tbody>
           </table>
           {users.length === 0 && (
-            <div className="text-center py-10 text-zinc-600">
-              No users found
-            </div>
+            <div className="text-center py-10 text-zinc-600">No users found</div>
           )}
         </div>
       )}
@@ -253,10 +233,9 @@ export default function SuperAdminUsersPage() {
                     .
                   </span>
                   <span className="block mt-2 text-red-400/80 text-xs font-medium bg-red-950/30 border border-red-900/40 rounded-lg px-3 py-2">
-                    ⚠ This will permanently delete all users, teams,
-                    departments, leads, conversations, and every other record
-                    belonging to this organization. This action cannot be
-                    undone.
+                    ⚠ This will permanently delete all users, teams, departments,
+                    leads, conversations, and every other record belonging to this
+                    organization. This action cannot be undone.
                   </span>
                 </>
               ) : (
@@ -295,8 +274,8 @@ export default function SuperAdminUsersPage() {
               {deleteLoading
                 ? "Deleting…"
                 : isL1
-                  ? "Delete Everything"
-                  : "Delete User"}
+                ? "Delete Everything"
+                : "Delete User"}
             </Button>
           </DialogFooter>
         </DialogContent>
