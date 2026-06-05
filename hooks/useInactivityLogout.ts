@@ -73,3 +73,4 @@ export function useInactivityLogout() {
 
   return { resetInactivityTimer: resetTimer };
 }
+
