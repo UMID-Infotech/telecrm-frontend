@@ -1,7 +1,7 @@
 // teleCRM/lib/api.ts
 
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { getToken, clearAuth } from './auth';
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { getToken, clearAuth } from "./auth";
 
 /**
  * Base API URL
@@ -14,22 +14,27 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 export const api = axios.create({
   baseURL: BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: false,
 });
 
 /**
- * 🔐 Attach JWT automatically
+ * 🔐 Attach JWT + fire an 'api-activity' custom event so the inactivity
+ * timer treats every outgoing API request as user activity.
  */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const token = getToken();
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+
+      // Dispatch a custom event — the inactivity hook listens for this
+      // so that background polls / dashboard refreshes also reset the timer.
+      window.dispatchEvent(new Event("api-activity"));
     }
 
     return config;
@@ -48,8 +53,8 @@ api.interceptors.response.use(
 
       if (status === 401) {
         clearAuth();
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
         }
       }
     }
@@ -62,7 +67,7 @@ api.interceptors.response.use(
  * Optional typed request helper
  */
 export async function apiRequest<T = any>(
-  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   url: string,
   data?: any,
 ): Promise<T> {
@@ -82,12 +87,12 @@ export async function apiRequest<T = any>(
 export async function apiFetch(
   endpoint: string,
   options: {
-    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     body?: any;
     headers?: Record<string, string>;
   } = {},
 ) {
-  const method = options.method || 'GET';
+  const method = options.method || "GET";
 
   const response = await api.request({
     url: endpoint,

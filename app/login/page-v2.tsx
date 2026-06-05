@@ -1,31 +1,18 @@
-// app/login/page.tsx
-"use client";
+//app/login/page.tsx
+'use client';
 
-import { Suspense, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
-import { api } from "@/lib/api";
-import { saveAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { INACTIVITY_TOAST_KEY } from "@/hooks/useInactivityLogout";
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { api } from '@/lib/api';
+import { saveAuth } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const passwordSet = searchParams.get("passwordSet");
-
-  useEffect(() => {
-    if (sessionStorage.getItem(INACTIVITY_TOAST_KEY)) {
-      sessionStorage.removeItem(INACTIVITY_TOAST_KEY);
-      setTimeout(() => {
-        toast.warning("You have been logged out due to inactivity.", {
-          duration: 6000,
-        });
-      }, 100);
-    }
-  }, []);
+  const passwordSet = searchParams.get('passwordSet');
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,26 +20,26 @@ function LoginContent() {
     try {
       const formData = new FormData(e.currentTarget);
 
-      const res = await api.post("/auth/login", {
-        email: formData.get("email"),
-        password: formData.get("password"),
+      const res = await api.post('/auth/login', {
+        email: formData.get('email'),
+        password: formData.get('password'),
       });
 
       const { accessToken, accessLevel, isSuperAdmin } = res.data;
 
       saveAuth(accessToken, accessLevel);
 
-      if (isSuperAdmin || accessLevel === "L0") {
-        router.push("/superadmin");
-      } else if (accessLevel === "L1") {
-        router.push("/admin");
-      } else if (accessLevel === "L2") {
-        router.push("/manager");
-      } else if (accessLevel === "L3") {
-        router.push("/agent");
+      if (isSuperAdmin || accessLevel === 'L0') {
+        router.push('/superadmin');
+      } else if (accessLevel === 'L1') {
+        router.push('/admin');
+      } else if (accessLevel === 'L2') {
+        router.push('/manager');
+      } else if (accessLevel === 'L3') {
+        router.push('/agent');
       }
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Login failed");
+      alert(err?.response?.data?.message || 'Login failed');
     }
   }
 
