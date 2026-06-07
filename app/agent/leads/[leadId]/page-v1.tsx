@@ -66,6 +66,7 @@ type ConversationType =
   | 'STATUS_CHANGE'
   | 'REASSIGNMENT_ACTIVITY';
 
+// Matches Prisma CallDisposition enum exactly
 type CallDisposition =
   | 'CONNECTED'
   | 'NOT_REACHABLE'
@@ -106,9 +107,9 @@ interface LeadConversation {
   id: string;
   type: ConversationType;
   notes?: string | null;
-  callDisposition?: CallDisposition | null;
-  callDuration?: number | null;
-  recordingUrl?: string | null;
+  callDisposition?: CallDisposition | null; // ← proper field, not callOutcome
+  callDuration?: number | null; // ← proper column
+  recordingUrl?: string | null; // ← proper column
   followUpDate?: string | null;
   nextAction?: string | null;
   statusBefore?: LeadJourneyStatus | null;
@@ -187,6 +188,7 @@ const conversationTypeLabel: Record<ConversationType, string> = {
   REASSIGNMENT_ACTIVITY: 'Lead Reassigned',
 };
 
+// Disposition label + visual config
 const dispositionConfig: Record<
   CallDisposition,
   { label: string; cls: string; icon: React.ReactNode }
@@ -243,6 +245,7 @@ const dispositionConfig: Record<
   },
 };
 
+// Call disposition options for the form
 const callDispositionFormOptions: { value: CallDisposition; label: string }[] =
   [
     { value: 'CONNECTED', label: 'Connected' },
@@ -284,28 +287,14 @@ function formatJourneyStatus(status: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/**
- * Normalise a phone number for use in tel: and wa.me links.
- * Strips spaces/dashes/parens. Prepends +91 if no country code found.
- */
-function normalisePhone(raw: string): string {
-  const digits = raw.replace(/[\s\-().+]/g, '');
-  // If it already starts with a country code (10+ digits without leading 0), keep it.
-  // Indian mobile numbers are 10 digits; prepend +91.
-  if (digits.length === 10 && !digits.startsWith('0')) {
-    return `+91${digits}`;
-  }
-  if (digits.startsWith('91') && digits.length === 12) {
-    return `+${digits}`;
-  }
-  return `+${digits}`;
-}
-
 // ─── Activity Timeline Entry ──────────────────────────────────────────────────
 
 function ActivityEntry({ conversation }: { conversation: LeadConversation }) {
   const disp = conversation.callDisposition;
   const dispCfg = disp ? dispositionConfig[disp] : null;
+  const isCallLike =
+    conversation.type === 'CALL_LOG' ||
+    conversation.type === 'WHATSAPP_INTERACTION';
 
   const iconBg =
     disp === 'CONNECTED' || disp === 'INTERESTED'
@@ -335,23 +324,24 @@ function ActivityEntry({ conversation }: { conversation: LeadConversation }) {
   };
 
   return (
-    <div className="flex gap-3 group">
+    <div className="flex gap-4 group">
       <div className="flex flex-col items-center">
         <div
-          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 border-2 ${iconBg} shadow-sm group-hover:scale-105 transition-transform`}
+          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 ${iconBg} shadow-sm group-hover:scale-105 transition-transform`}
         >
           {getIcon()}
         </div>
         <div className="w-px flex-1 bg-slate-100 group-last:hidden mt-1.5" />
       </div>
 
-      <div className="pb-5 flex-1 min-w-0">
-        <div className="bg-white rounded-xl border border-slate-100/90 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="pb-6 flex-1 min-w-0">
+        <div className="bg-white rounded-xl border border-slate-100/90 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-sm text-slate-800">
                 {conversationTypeLabel[conversation.type] ?? conversation.type}
               </span>
+              {/* Disposition badge — uses proper callDisposition field */}
               {dispCfg && (
                 <Badge
                   variant="outline"
@@ -363,7 +353,7 @@ function ActivityEntry({ conversation }: { conversation: LeadConversation }) {
                 </Badge>
               )}
             </div>
-            <span className="text-[10px] font-semibold text-slate-400 whitespace-nowrap">
+            <span className="text-[11px] font-semibold text-slate-400 whitespace-nowrap">
               {formatDateTime(conversation.createdAt)}
             </span>
           </div>
@@ -379,6 +369,7 @@ function ActivityEntry({ conversation }: { conversation: LeadConversation }) {
             </p>
           )}
 
+          {/* Duration + Recording — from proper columns */}
           {conversation.callDuration != null && (
             <div className="mt-2.5 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
@@ -397,6 +388,7 @@ function ActivityEntry({ conversation }: { conversation: LeadConversation }) {
             </div>
           )}
 
+          {/* Next action */}
           {conversation.nextAction && (
             <div className="mt-2 text-xs text-slate-600 bg-blue-50/50 border border-blue-100 rounded-lg px-2.5 py-1.5 font-medium">
               <span className="font-bold text-blue-700">Next Action: </span>
@@ -404,6 +396,7 @@ function ActivityEntry({ conversation }: { conversation: LeadConversation }) {
             </div>
           )}
 
+          {/* Follow-up date */}
           {conversation.followUpDate && (
             <div className="mt-2.5 text-xs text-purple-700 bg-purple-50 border border-purple-100 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold">
               <CalendarClock size={11} /> Callback Scheduled:{' '}
@@ -411,6 +404,7 @@ function ActivityEntry({ conversation }: { conversation: LeadConversation }) {
             </div>
           )}
 
+          {/* Status transition */}
           {conversation.statusAfter && (
             <div className="mt-2.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 inline-flex rounded-full px-2.5 py-0.5">
               Pipeline:{' '}
@@ -424,6 +418,7 @@ function ActivityEntry({ conversation }: { conversation: LeadConversation }) {
             </div>
           )}
 
+          {/* Attachments */}
           {conversation.attachments && conversation.attachments.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-2">
               {conversation.attachments.map((att) => (
@@ -456,11 +451,13 @@ export default function AgentLeadDetailPage() {
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Activity form
   const [activeForm, setActiveForm] = useState<
     'call' | 'whatsapp' | 'followup' | 'note'
   >('call');
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Call log form — using callDisposition (not callOutcome)
   const [callDisposition, setCallDisposition] =
     useState<CallDisposition>('CONNECTED');
   const [callNotes, setCallNotes] = useState('');
@@ -468,18 +465,24 @@ export default function AgentLeadDetailPage() {
   const [recordingUrl, setRecordingUrl] = useState('');
   const [nextAction, setNextAction] = useState('');
 
+  // WhatsApp form
   const [waNotes, setWaNotes] = useState('');
+
+  // Internal note form
   const [internalNote, setInternalNote] = useState('');
 
+  // Follow-up form
   const [fDate, setFDate] = useState('');
   const [fNotes, setFNotes] = useState('');
 
+  // Status transitions
   const [transitionStatus, setTransitionStatus] =
     useState<LeadJourneyStatus | null>(null);
   const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
   const [statusRemarks, setStatusRemarks] = useState('');
   const [statusChangeLoading, setStatusChangeLoading] = useState(false);
 
+  // Reschedule modal
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [rescheduleFollowUpId, setRescheduleFollowUpId] = useState<
     string | null
@@ -488,6 +491,7 @@ export default function AgentLeadDetailPage() {
   const [rescheduleNotes, setRescheduleNotes] = useState('');
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
 
+  // ✅ Fix: remove showToast from deps
   const fetchLead = useCallback(async () => {
     setLoading(true);
     try {
@@ -502,7 +506,7 @@ export default function AgentLeadDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [leadId, router]);
+  }, [leadId, router]); // ← showToast removed
 
   useEffect(() => {
     fetchLead();
@@ -606,6 +610,7 @@ export default function AgentLeadDetailPage() {
     if (!lead || !fDate) return;
     setActionLoading(true);
     try {
+      // POST /agent/followup — CreateFollowupDto
       await api.post('/agent/followup', {
         leadId: lead.id,
         followUpAt: new Date(fDate).toISOString(),
@@ -629,6 +634,7 @@ export default function AgentLeadDetailPage() {
 
   const completeFollowUp = async (followupId: string) => {
     try {
+      // PATCH /agent/followup/:id — UpdateFollowupDto
       await api.patch(`/agent/followup/${followupId}`, {
         status: 'COMPLETED',
         notes: 'Follow-up resolved by agent.',
@@ -740,6 +746,7 @@ export default function AgentLeadDetailPage() {
     (f) => f.status === 'PENDING',
   );
 
+  // Destructure lead.data safely
   const lData = lead.data || {};
   const email = lData.email ?? 'Not Available';
   const city = lData.city ?? lData.state ?? lData.cityState ?? 'Not Provided';
@@ -750,14 +757,8 @@ export default function AgentLeadDetailPage() {
     lData.productInterestedIn ?? lData.product ?? 'Starter Pack';
   const uploadedDocs = lData.documents ?? lData.uploadedDocuments ?? [];
 
-  // ── Normalised phone for action links ─────────────────────────────────────
-  const normalisedPhone = normalisePhone(lead.phone);
-  const telHref = `tel:${normalisedPhone}`;
-  // wa.me uses number without + prefix
-  const waHref = `https://wa.me/${normalisedPhone.replace('+', '')}`;
-
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
       {ToastComponent}
 
       {/* Back */}
@@ -770,102 +771,61 @@ export default function AgentLeadDetailPage() {
         <ArrowLeft size={16} /> Leads Directory
       </Button>
 
-      {/* ── Header Card ────────────────────────────────────────────────────── */}
+      {/* Header Card */}
       <Card className="border border-slate-100 bg-white shadow-sm overflow-hidden">
-        <CardContent className="pt-4 pb-4 px-4 sm:pt-6 sm:px-6">
-          <div className="flex flex-col gap-4">
-            {/* Name + badges row */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">
-                    {lead.name}
-                  </h1>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
+                  {lead.name}
+                </h1>
+                <Badge
+                  variant="outline"
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] border ${leadPriorityObj.cls}`}
+                >
+                  {lead.priority} Priority
+                </Badge>
+                {lead.approvalStatus === 'PENDING' && (
                   <Badge
-                    variant="outline"
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] border ${leadPriorityObj.cls}`}
+                    variant="secondary"
+                    className="bg-amber-50 text-amber-800 border-amber-200"
                   >
-                    {lead.priority} Priority
+                    Pending Approval
                   </Badge>
-                  {lead.approvalStatus === 'PENDING' && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-amber-50 text-amber-800 border-amber-200"
-                    >
-                      Pending Approval
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm font-mono text-slate-500 tracking-wide font-medium break-all">
-                  {lead.phone} ·{' '}
-                  <span className="text-slate-400 font-sans">{email}</span>
+                )}
+              </div>
+              <p className="text-sm font-mono text-slate-500 tracking-wide font-medium">
+                {lead.phone} ·{' '}
+                <span className="text-slate-400 font-sans">{email}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border shrink-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="text-xs">
+                <p className="text-slate-400 font-semibold uppercase tracking-wider text-[9px] leading-none">
+                  Current Status
+                </p>
+                <p className="text-slate-700 font-bold mt-1 text-[13px]">
+                  {formatJourneyStatus(lead.currentJourneyStatus)}
                 </p>
               </div>
-
-              {/* Status pill */}
-              <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border shrink-0 self-start">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <div className="text-xs">
-                  <p className="text-slate-400 font-semibold uppercase tracking-wider text-[9px] leading-none">
-                    Current Status
-                  </p>
-                  <p className="text-slate-700 font-bold mt-1 text-[13px]">
-                    {formatJourneyStatus(lead.currentJourneyStatus)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Quick Action Buttons: Call + WhatsApp ───────────────────── */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* CALL BUTTON — opens phone dialer */}
-              <a
-                href={telHref}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold shadow-sm transition-colors select-none"
-                aria-label={`Call ${lead.name}`}
-              >
-                <Phone size={15} />
-                <span>Call</span>
-                <span className="hidden xs:inline text-blue-200 font-mono text-xs">
-                  {lead.phone}
-                </span>
-              </a>
-
-              {/* WHATSAPP BUTTON — opens WhatsApp chat */}
-              <a
-                href={waHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20b858] active:bg-[#1da34f] text-white text-sm font-bold shadow-sm transition-colors select-none"
-                aria-label={`WhatsApp ${lead.name}`}
-              >
-                {/* WhatsApp SVG icon (no external dependency) */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-4 h-4"
-                >
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                </svg>
-                <span>WhatsApp</span>
-              </a>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* ── Pipeline Stepper ───────────────────────────────────────────────── */}
-      <div className="bg-white border rounded-2xl p-3 sm:p-4 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between mb-3 px-0.5">
-          <h2 className="text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider">
+      {/* Pipeline Stepper */}
+      <div className="bg-white border rounded-2xl p-4 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between mb-3.5 px-1.5">
+          <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
             Lead Sales Progression
           </h2>
-          <span className="text-[10px] sm:text-xs font-semibold text-slate-400 hidden sm:block">
-            Click target stage to transition
+          <span className="text-xs font-semibold text-slate-400">
+            Click target stage to transition lead status
           </span>
         </div>
-        <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto pb-1 scrollbar-thin -mx-1 px-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
           {pipelineStages.map((stage, idx) => {
             const currentIdx = pipelineStages.findIndex(
               (s) => s.status === lead.currentJourneyStatus,
@@ -885,10 +845,10 @@ export default function AgentLeadDetailPage() {
                 key={stage.status}
                 disabled={!canCall}
                 onClick={() => handlePipelineStepClick(stage.status)}
-                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold rounded-lg border transition-all cursor-pointer whitespace-nowrap shrink-0 ${stepColor} disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer whitespace-nowrap shrink-0 ${stepColor} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <span className="flex items-center gap-1 sm:gap-1.5">
-                  {isCompleted && <FileCheck2 size={11} />}
+                <span className="flex items-center gap-1.5">
+                  {isCompleted && <FileCheck2 size={13} />}
                   {stage.label}
                 </span>
               </button>
@@ -897,56 +857,55 @@ export default function AgentLeadDetailPage() {
         </div>
       </div>
 
-      {/* ── Two-Column Layout ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
-
+      {/* Two-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT: Lead Details */}
-        <div className="lg:col-span-4 space-y-4 sm:space-y-6">
+        <div className="lg:col-span-4 space-y-6">
           <Card className="border border-slate-100 shadow-sm bg-white overflow-hidden rounded-2xl">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100/80 py-3 px-4 sm:py-3.5 sm:px-5">
-              <CardTitle className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
-                <Briefcase size={15} className="text-slate-500" /> Lead
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100/80 py-3.5 px-5">
+              <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Briefcase size={16} className="text-slate-500" /> Lead
                 Specifications
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 sm:p-4">
+            <CardContent className="p-4">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid grid-cols-3 bg-slate-100 rounded-xl p-1 h-auto mb-2">
+                <TabsList className="grid grid-cols-3 bg-slate-100 rounded-xl p-1 h-auto mb-3">
                   <TabsTrigger
                     value="basic"
-                    className="text-[11px] py-1.5 font-bold rounded-lg cursor-pointer"
+                    className="text-xs py-1.5 font-bold rounded-lg cursor-pointer"
                   >
                     Basic
                   </TabsTrigger>
                   <TabsTrigger
                     value="source"
-                    className="text-[11px] py-1.5 font-bold rounded-lg cursor-pointer"
+                    className="text-xs py-1.5 font-bold rounded-lg cursor-pointer"
                   >
                     Source
                   </TabsTrigger>
                   <TabsTrigger
                     value="campaign"
-                    className="text-[11px] py-1.5 font-bold rounded-lg cursor-pointer"
+                    className="text-xs py-1.5 font-bold rounded-lg cursor-pointer"
                   >
                     Campaign
                   </TabsTrigger>
                 </TabsList>
-                <TabsList className="grid grid-cols-3 bg-slate-100 rounded-xl p-1 h-auto mb-3">
+                <TabsList className="grid grid-cols-3 bg-slate-100 rounded-xl p-1 h-auto mb-4">
                   <TabsTrigger
                     value="documents"
-                    className="text-[11px] py-1.5 font-bold rounded-lg cursor-pointer"
+                    className="text-xs py-1.5 font-bold rounded-lg cursor-pointer"
                   >
                     Docs
                   </TabsTrigger>
                   <TabsTrigger
                     value="assignment"
-                    className="text-[11px] py-1.5 font-bold rounded-lg cursor-pointer"
+                    className="text-xs py-1.5 font-bold rounded-lg cursor-pointer"
                   >
                     Assigns
                   </TabsTrigger>
                   <TabsTrigger
                     value="summary"
-                    className="text-[11px] py-1.5 font-bold rounded-lg cursor-pointer"
+                    className="text-xs py-1.5 font-bold rounded-lg cursor-pointer"
                   >
                     Timeline
                   </TabsTrigger>
@@ -1033,6 +992,7 @@ export default function AgentLeadDetailPage() {
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-3">
                     Uploaded Lead Files
                   </span>
+                  {/* Lead-level attachments from backend */}
                   {(lead.attachments ?? []).length > 0 ? (
                     <div className="space-y-2">
                       {(lead.attachments ?? []).map((att) => (
@@ -1172,6 +1132,7 @@ export default function AgentLeadDetailPage() {
                         </p>
                       </div>
                     )}
+                    {/* Status history milestones */}
                     {(lead.statusHistory ?? []).slice(0, 5).map((h) => (
                       <div key={h.id} className="space-y-0.5 relative">
                         <span className="absolute -left-[20px] top-1.5 w-2 h-2 rounded-full bg-indigo-400" />
@@ -1192,21 +1153,21 @@ export default function AgentLeadDetailPage() {
         </div>
 
         {/* RIGHT: Activity Creator + Timeline */}
-        <div className="lg:col-span-8 space-y-4 sm:space-y-6">
+        <div className="lg:col-span-8 space-y-6">
           {/* Pending Follow-ups */}
           {pendingFollowUps.length > 0 && (
             <Card className="border-purple-100 bg-gradient-to-r from-purple-500/[0.03] to-purple-500/[0.08] shadow-sm rounded-2xl overflow-hidden">
-              <CardHeader className="py-3 px-4 sm:px-5 border-b border-purple-100/50 flex flex-row items-center justify-between">
+              <CardHeader className="py-3 px-5 border-b border-purple-100/50 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-bold text-purple-800 flex items-center gap-1.5">
-                  <CalendarRange size={15} /> Pending Callback Schedules (
+                  <CalendarRange size={16} /> Pending Callback Schedules (
                   {pendingFollowUps.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-3 sm:p-4 space-y-3">
+              <CardContent className="p-4 space-y-3">
                 {pendingFollowUps.map((f) => (
                   <div
                     key={f.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-3.5 rounded-xl border border-purple-100 shadow-sm"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-purple-100 shadow-sm"
                   >
                     <div>
                       <p className="text-sm font-bold text-slate-800 flex items-center gap-1">
@@ -1247,46 +1208,44 @@ export default function AgentLeadDetailPage() {
           {/* Activity Creator */}
           {canCall && (
             <Card className="border border-slate-100 shadow-sm rounded-2xl overflow-hidden bg-white">
-              {/* Tab bar — horizontal scroll on mobile */}
-              <div className="bg-slate-50/50 border-b flex gap-0.5 sm:gap-1 px-2 sm:px-4 py-2 overflow-x-auto scrollbar-none">
+              <div className="bg-slate-50/50 border-b flex flex-wrap gap-1 px-4 py-2">
                 {[
                   {
                     id: 'call' as const,
                     label: 'Log Call',
-                    icon: <Phone size={13} />,
+                    icon: <Phone size={14} />,
                   },
                   {
                     id: 'whatsapp' as const,
                     label: 'Log WhatsApp',
-                    icon: <MessageCircle size={13} />,
+                    icon: <MessageCircle size={14} />,
                   },
                   {
                     id: 'followup' as const,
                     label: 'Schedule Callback',
-                    icon: <CalendarClock size={13} />,
+                    icon: <CalendarClock size={14} />,
                   },
                   {
                     id: 'note' as const,
                     label: 'Internal Note',
-                    icon: <ClipboardList size={13} />,
+                    icon: <ClipboardList size={14} />,
                   },
                 ].map((ft) => (
                   <button
                     key={ft.id}
                     onClick={() => setActiveForm(ft.id)}
-                    className={`px-2.5 sm:px-3 py-2 rounded-lg text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
                       activeForm === ft.id
                         ? 'bg-white border text-blue-600 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/50'
+                        : 'text-slate-550 hover:text-slate-900 hover:bg-slate-100/50'
                     }`}
                   >
-                    {ft.icon}
-                    <span className="hidden xs:inline sm:inline">{ft.label}</span>
+                    {ft.icon} {ft.label}
                   </button>
                 ))}
               </div>
 
-              <CardContent className="p-4 sm:p-5">
+              <CardContent className="p-5">
                 {/* CALL LOG */}
                 {activeForm === 'call' && (
                   <div className="space-y-4">
@@ -1383,7 +1342,7 @@ export default function AgentLeadDetailPage() {
                       <Button
                         onClick={submitCallLog}
                         disabled={actionLoading}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm w-full sm:w-auto"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
                       >
                         {actionLoading ? 'Logging...' : 'Save Call Activity'}
                       </Button>
@@ -1410,7 +1369,7 @@ export default function AgentLeadDetailPage() {
                       <Button
                         onClick={submitWhatsAppLog}
                         disabled={actionLoading}
-                        className="bg-teal-600 hover:bg-teal-700 text-white font-semibold shadow-sm w-full sm:w-auto"
+                        className="bg-teal-600 hover:bg-teal-700 text-white font-semibold shadow-sm"
                       >
                         {actionLoading ? 'Logging...' : 'Save WhatsApp Details'}
                       </Button>
@@ -1451,7 +1410,7 @@ export default function AgentLeadDetailPage() {
                       <Button
                         onClick={submitScheduleFollowUp}
                         disabled={actionLoading || !fDate}
-                        className="bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-sm w-full sm:w-auto"
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-sm"
                       >
                         {actionLoading
                           ? 'Scheduling...'
@@ -1480,7 +1439,7 @@ export default function AgentLeadDetailPage() {
                       <Button
                         onClick={submitInternalNote}
                         disabled={actionLoading}
-                        className="bg-slate-800 hover:bg-slate-900 text-white font-semibold shadow-sm w-full sm:w-auto"
+                        className="bg-slate-800 hover:bg-slate-900 text-white font-semibold shadow-sm"
                       >
                         {actionLoading ? 'Saving...' : 'Add Internal Note'}
                       </Button>
@@ -1493,17 +1452,17 @@ export default function AgentLeadDetailPage() {
 
           {/* Activity Timeline */}
           <Card className="border border-slate-100 shadow-sm bg-white overflow-hidden rounded-2xl">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100/80 py-3 px-4 sm:py-3.5 sm:px-5">
-              <CardTitle className="text-sm sm:text-base font-bold text-slate-800 flex items-center justify-between">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100/80 py-3.5 px-5">
+              <CardTitle className="text-base font-bold text-slate-800 flex items-center justify-between">
                 <span>Customer Journey Timeline</span>
                 <span className="text-[11px] bg-slate-200 text-slate-700 rounded-full px-2.5 py-0.5 font-bold uppercase tracking-wider">
                   {lead.conversations.length} Events
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6">
+            <CardContent className="p-6">
               {lead.conversations.length === 0 ? (
-                <div className="text-center py-12 sm:py-16 text-slate-400">
+                <div className="text-center py-16 text-slate-400">
                   <Clock
                     size={36}
                     className="mx-auto text-slate-200 mb-2 stroke-[1.5]"
@@ -1533,7 +1492,7 @@ export default function AgentLeadDetailPage() {
         open={statusConfirmOpen}
         onOpenChange={(o) => !o && setStatusConfirmOpen(false)}
       >
-        <DialogContent className="max-w-md mx-4 sm:mx-auto border-slate-100 shadow-2xl rounded-2xl">
+        <DialogContent className="max-w-md border-slate-100 shadow-2xl rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-bold text-lg text-slate-800">
               <TrendingUp className="text-blue-500 w-5 h-5" /> Confirm Pipeline
@@ -1558,19 +1517,19 @@ export default function AgentLeadDetailPage() {
               className="resize-none rounded-xl"
             />
           </div>
-          <DialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row">
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               disabled={statusChangeLoading}
               onClick={() => setStatusConfirmOpen(false)}
-              className="border-slate-200 font-medium text-slate-650 w-full sm:w-auto"
+              className="border-slate-200 font-medium text-slate-650"
             >
               Cancel
             </Button>
             <Button
               onClick={submitStandardStatusChange}
               disabled={statusChangeLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold w-full sm:w-auto"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
             >
               {statusChangeLoading ? 'Transitioning...' : 'Confirm Step'}
             </Button>
@@ -1605,7 +1564,7 @@ export default function AgentLeadDetailPage() {
           !o && !rescheduleLoading && setRescheduleOpen(false)
         }
       >
-        <DialogContent className="max-w-md mx-4 sm:mx-auto border-slate-100 shadow-2xl rounded-2xl">
+        <DialogContent className="max-w-md border-slate-100 shadow-2xl rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-bold text-lg text-purple-700">
               <CalendarRange className="w-5 h-5 text-purple-500" /> Reschedule
@@ -1641,19 +1600,19 @@ export default function AgentLeadDetailPage() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row">
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               disabled={rescheduleLoading}
               onClick={() => setRescheduleOpen(false)}
-              className="border-slate-200 font-medium text-slate-650 w-full sm:w-auto"
+              className="border-slate-200 font-medium text-slate-650"
             >
               Cancel
             </Button>
             <Button
               onClick={submitRescheduleFollowUp}
               disabled={rescheduleLoading || !rescheduleDate}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold w-full sm:w-auto"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold"
             >
               {rescheduleLoading ? 'Rescheduling...' : 'Reschedule Callback'}
             </Button>
