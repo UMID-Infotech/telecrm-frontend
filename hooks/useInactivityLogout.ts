@@ -1,4 +1,4 @@
-// teleCRM/hooks/useInactivityLogout.ts
+// teleCRM/frontend/hooks/useInactivityLogout.ts
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
