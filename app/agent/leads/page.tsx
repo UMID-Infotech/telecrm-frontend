@@ -343,7 +343,7 @@ export default function AgentLeadsPage() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-sm text-slate-500 font-medium">{lead.phone}</TableCell>
+                      {/* <TableCell className="font-mono text-sm text-slate-500 font-medium">{lead.phone}</TableCell> */}
                       <TableCell>
                         <Badge variant="outline" className={`rounded-full px-2.5 py-0.5 text-[10px] ${priorityConfig[lead.priority].cls}`}>
                           {priorityConfig[lead.priority].label}
