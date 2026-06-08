@@ -25,6 +25,7 @@ interface MeResponse {
 export default function AgentHeader() {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState("");
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     api
@@ -46,14 +47,18 @@ export default function AgentHeader() {
   return (
     <header className="h-14 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center px-4 justify-between">
       <div className="flex items-center gap-2">
-        <Sheet>
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden text-white">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-white"
+            >
               <Menu />
             </Button>
           </SheetTrigger>
           <SheetContent side="top" className="p-0">
-            <MobileMenu />
+            <MobileMenu onNavigate={() => setSheetOpen(false)} />
           </SheetContent>
         </Sheet>
         <h1 className="font-semibold text-lg">TeleCRM · Agent</h1>

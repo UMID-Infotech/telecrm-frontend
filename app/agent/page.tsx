@@ -600,9 +600,9 @@ export default function AgentDashboardPage() {
                         <h3 className="font-bold text-slate-800 text-base leading-tight truncate">
                           {lead.name}
                         </h3>
-                        <p className="text-xs font-mono text-slate-400 mt-0.5 tracking-wider">
+                        {/* <p className="text-xs font-mono text-slate-400 mt-0.5 tracking-wider">
                           {lead.phone}
-                        </p>
+                        </p> */}
                       </div>
                       <Badge
                         variant="outline"
