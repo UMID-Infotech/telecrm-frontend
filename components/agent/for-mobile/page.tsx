@@ -872,9 +872,9 @@ export default function AgentLeadDetailPage() {
               <h1 className="text-xl font-extrabold tracking-tight leading-tight break-words">
                 {lead.name}
               </h1>
-              <p className="font-mono text-sm text-blue-100 mt-0.5">
+              {/* <p className="font-mono text-sm text-blue-100 mt-0.5">
                 {lead.phone}
-              </p>
+              </p> */}
               {email && email !== "Not Available" && (
                 <p className="text-xs text-blue-200 mt-0.5 truncate">{email}</p>
               )}
@@ -1041,7 +1041,7 @@ export default function AgentLeadDetailPage() {
           <dl className="space-y-3">
             {[
               { label: "Name", value: lead.name },
-              { label: "Mobile", value: lead.phone },
+              // { label: "Mobile", value: lead.phone },
               { label: "Email", value: email },
               { label: "City / State", value: city },
               { label: "Created", value: formatDateTime(lead.createdAt) },

@@ -797,7 +797,7 @@ export default function AgentLeadDetailPage() {
                   </div>
                   {/* Phone + email — stack on very small screens */}
                   <div className="text-sm text-slate-500 tracking-wide font-medium break-all">
-                    <span className="font-mono">{lead.phone}</span>
+                    {/* <span className="font-mono">{lead.phone}</span> */}
                     <span className="text-slate-300 mx-1.5">·</span>
                     <span className="text-slate-400 font-sans">{email}</span>
                   </div>
@@ -957,7 +957,7 @@ export default function AgentLeadDetailPage() {
                   <TabsContent value="basic" className="space-y-3 pt-1">
                     {[
                       { label: "Name", value: lead.name },
-                      { label: "Mobile Number", value: lead.phone },
+                      // { label: "Mobile Number", value: lead.phone },
                       { label: "Email", value: email },
                       { label: "City / State", value: city },
                       {
