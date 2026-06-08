@@ -1,4 +1,4 @@
-// teleCRM/app/agent/leads/[leadId]/conversion-dialog.tsx
+// teleCRM/components/agent/for-desktop/conversion-dialog.tsx
 "use client";
 
 import { useState } from "react";
@@ -133,31 +133,38 @@ export function ConversionDialog({
       <Dialog open={open} onOpenChange={(o) => !loading && onOpenChange(o)}>
         <DialogContent
           className="
-            w-[95vw] max-w-[95vw] sm:max-w-md
-            max-h-[90vh] overflow-y-auto
+            w-[calc(100vw-2rem)]
+            max-w-md
+            max-h-[90dvh]
+            overflow-y-auto
             p-4 sm:p-6
-            rounded-xl
+            rounded-2xl
+            border-slate-100
+            shadow-2xl
           "
         >
           <DialogHeader className="space-y-2">
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg min-w-0">
               {isConverted ? (
                 <>
                   <TrendingUp className="h-5 w-5 text-emerald-600 shrink-0" />
-                  <span className="text-emerald-700">
+                  <span className="text-emerald-700 truncate">
                     Celebrate Conversion!
                   </span>
                 </>
               ) : (
                 <>
                   <ShieldAlert className="h-5 w-5 text-rose-600 shrink-0" />
-                  <span className="text-rose-700">Lead Closure Details</span>
+                  <span className="text-rose-700 truncate">
+                    Lead Closure Details
+                  </span>
                 </>
               )}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm break-words">
-              Update details for <span className="font-medium">{leadName}</span>{" "}
-              before locking the status.
+              Update details for{" "}
+              <span className="font-medium break-words">{leadName}</span> before
+              locking the status.
             </DialogDescription>
           </DialogHeader>
 
@@ -179,7 +186,7 @@ export function ConversionDialog({
                     placeholder="e.g. 25000"
                     value={conversionValue}
                     onChange={(e) => setConversionValue(e.target.value)}
-                    className="h-11 sm:h-10 text-base sm:text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                    className="h-11 sm:h-10 text-base sm:text-sm focus:ring-emerald-500 focus:border-emerald-500 w-full"
                   />
                 </div>
 
@@ -195,7 +202,7 @@ export function ConversionDialog({
                     placeholder="e.g. Premium Plan"
                     value={productSelected}
                     onChange={(e) => setProductSelected(e.target.value)}
-                    className="h-11 sm:h-10 text-base sm:text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                    className="h-11 sm:h-10 text-base sm:text-sm focus:ring-emerald-500 focus:border-emerald-500 w-full"
                   />
                 </div>
               </>
@@ -205,10 +212,14 @@ export function ConversionDialog({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Closure Reason</Label>
                   <Select value={lossReason} onValueChange={setLossReason}>
-                    <SelectTrigger className="h-11 sm:h-10 text-base sm:text-sm focus:ring-rose-500 focus:border-rose-500">
+                    <SelectTrigger className="h-11 sm:h-10 text-base sm:text-sm focus:ring-rose-500 focus:border-rose-500 w-full">
                       <SelectValue placeholder="Select a reason" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[50vh]">
+                    <SelectContent
+                      className="max-h-[50vh] w-[calc(100vw-4rem)] sm:w-auto"
+                      position="popper"
+                      sideOffset={4}
+                    >
                       <SelectItem value="HIGH_PRICING">
                         High Pricing / Budget Constraints
                       </SelectItem>
@@ -234,14 +245,17 @@ export function ConversionDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="competitor" className="text-sm font-medium">
-                    Competitor Chosen (optional)
+                    Competitor Chosen{" "}
+                    <span className="text-slate-400 font-normal text-xs">
+                      (optional)
+                    </span>
                   </Label>
                   <Input
                     id="competitor"
                     placeholder="e.g. ABC Corp"
                     value={competitor}
                     onChange={(e) => setCompetitor(e.target.value)}
-                    className="h-11 sm:h-10 text-base sm:text-sm focus:ring-rose-500 focus:border-rose-500"
+                    className="h-11 sm:h-10 text-base sm:text-sm focus:ring-rose-500 focus:border-rose-500 w-full"
                   />
                 </div>
 
@@ -250,7 +264,10 @@ export function ConversionDialog({
                     htmlFor="closure-notes"
                     className="text-sm font-medium"
                   >
-                    Closure Notes (optional)
+                    Closure Notes{" "}
+                    <span className="text-slate-400 font-normal text-xs">
+                      (optional)
+                    </span>
                   </Label>
                   <Textarea
                     id="closure-notes"
@@ -258,14 +275,14 @@ export function ConversionDialog({
                     value={closureNotes}
                     onChange={(e) => setClosureNotes(e.target.value)}
                     rows={3}
-                    className="resize-none text-base sm:text-sm focus:ring-rose-500 focus:border-rose-500"
+                    className="resize-none text-base sm:text-sm focus:ring-rose-500 focus:border-rose-500 w-full"
                   />
                 </div>
               </>
             )}
           </div>
 
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2 pt-2">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
             <Button
               variant="outline"
               disabled={loading}

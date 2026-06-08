@@ -1,4 +1,4 @@
-// teleCRM/app/agent/leads/[leadId]/page.tsx
+// teleCRM/components/agent/for-desktop/page.tsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
