@@ -51,7 +51,6 @@ import {
   Paperclip,
 } from "lucide-react";
 import { ConversionDialog } from "./conversion-dialog";
-import { FollowUpFormDialog } from "./follow-up-form-dialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -486,7 +485,6 @@ export default function AgentLeadDetailPage() {
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleNotes, setRescheduleNotes] = useState("");
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
-  const [followUpOpen, setFollowUpOpen] = useState(false);
 
   const fetchLead = useCallback(async () => {
     setLoading(true);
@@ -801,8 +799,7 @@ export default function AgentLeadDetailPage() {
                   <div className="text-sm text-slate-500 tracking-wide font-medium break-all">
                     {/* <span className="font-mono">{lead.phone}</span> */}
                     <span className="text-slate-300 mx-1.5">·</span>
-                    <span className="text-slate-400 font-sans">{lead.data.email || lead.data["Contact Email"]}</span>
-                    <span className="text-slate-400 font-sans">{lead.data["Industry / Sector"]}</span>
+                    <span className="text-slate-400 font-sans">{email}</span>
                   </div>
                 </div>
 
@@ -830,7 +827,7 @@ export default function AgentLeadDetailPage() {
                   <Phone size={15} />
                   <span>Call</span>
                   <span className="hidden sm:inline text-blue-200 font-mono text-xs truncate max-w-[120px]">
-                    {/* {lead.phone} */}
+                    {lead.phone}
                   </span>
                 </a>
 
@@ -851,13 +848,6 @@ export default function AgentLeadDetailPage() {
                   </svg>
                   <span>WhatsApp</span>
                 </a>
-                <Button
-                  onClick={() => setFollowUpOpen(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold gap-2"
-                >
-                  <CalendarClock size={16} />
-                  Log Follow-Up
-                </Button>
               </div>
             </div>
           </CardContent>
@@ -968,8 +958,8 @@ export default function AgentLeadDetailPage() {
                     {[
                       { label: "Name", value: lead.name },
                       // { label: "Mobile Number", value: lead.phone },
-                      { label: "Email", value: lead.data.email },
-                      { label: "City / State", value: lead.data.city },
+                      { label: "Email", value: email },
+                      { label: "City / State", value: city },
                       {
                         label: "Created Time",
                         value: formatDateTime(lead.createdAt),
@@ -1602,14 +1592,6 @@ export default function AgentLeadDetailPage() {
           }
           leadId={lead.id}
           leadName={lead.name}
-          onSuccess={fetchLead}
-        />
-
-        <FollowUpFormDialog
-          open={followUpOpen}
-          onOpenChange={setFollowUpOpen}
-          leadId={lead?.id ?? ""}
-          leadName={lead?.name ?? "this lead"}
           onSuccess={fetchLead}
         />
 

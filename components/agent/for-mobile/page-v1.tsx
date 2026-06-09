@@ -55,7 +55,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ConversionDialog } from "./conversion-dialog";
-import { FollowUpFormDialog } from "./follow-up-form-dialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -550,7 +549,6 @@ export default function AgentLeadDetailPage() {
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleNotes, setRescheduleNotes] = useState("");
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
-  const [followUpOpen, setFollowUpOpen] = useState(false);
 
   const fetchLead = useCallback(async () => {
     setLoading(true);
@@ -877,10 +875,9 @@ export default function AgentLeadDetailPage() {
               {/* <p className="font-mono text-sm text-blue-100 mt-0.5">
                 {lead.phone}
               </p> */}
-              {/* {email && email !== "Not Available" && (
+              {email && email !== "Not Available" && (
                 <p className="text-xs text-blue-200 mt-0.5 truncate">{email}</p>
-              )} */}
-                    <span className="text-slate-400 font-sans">{lead.data["Industry / Sector"]}</span>
+              )}
             </div>
           </div>
 
@@ -926,7 +923,7 @@ export default function AgentLeadDetailPage() {
         {/* ── Pipeline progress (compact, opens sheet) ──────────────────── */}
         <button
           disabled={!canCall}
-          // onClick={() => setPipelineSheetOpen(true)}
+          onClick={() => setPipelineSheetOpen(true)}
           className="w-full bg-white border border-slate-200/70 rounded-2xl p-4 shadow-sm text-left disabled:opacity-70 active:bg-slate-50 transition"
         >
           <div className="flex items-center justify-between gap-2 mb-3">
@@ -950,11 +947,11 @@ export default function AgentLeadDetailPage() {
             <p className="text-sm font-bold text-slate-900 truncate">
               {formatJourneyStatus(lead.currentJourneyStatus)}
             </p>
-            {/* {canCall && (
+            {canCall && (
               <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 shrink-0">
                 Change <ChevronRight size={14} />
               </span>
-            )} */}
+            )}
           </div>
         </button>
 
@@ -1045,8 +1042,8 @@ export default function AgentLeadDetailPage() {
             {[
               { label: "Name", value: lead.name },
               // { label: "Mobile", value: lead.phone },
-              { label: "Email", value: lead.email || lead.data["Contact Email"] },
-              { label: "City / State", value: lead.city || lead.data["City / Location"] },
+              { label: "Email", value: email },
+              { label: "City / State", value: city },
               { label: "Created", value: formatDateTime(lead.createdAt) },
             ].map((row) => (
               <div
@@ -1263,17 +1260,10 @@ export default function AgentLeadDetailPage() {
                 <MessageCircle size={18} /> Chat
               </span>
             </a>
-            {/* <button
+            <button
               onClick={() => setComposerOpen(true)}
               className="h-12 w-12 rounded-2xl bg-slate-900 active:bg-slate-800 text-white grid place-items-center shadow-md active:scale-[0.95] transition shrink-0"
               aria-label="Log activity"
-            >
-              <Plus size={22} />
-            </button> */}
-            <button
-              onClick={() => setFollowUpOpen(true)}
-              className="h-12 w-12 rounded-2xl bg-indigo-600 active:bg-indigo-700 text-white grid place-items-center shadow-md shadow-indigo-200 active:scale-[0.95] transition shrink-0"
-              aria-label="Log follow-up"
             >
               <Plus size={22} />
             </button>
@@ -1689,14 +1679,6 @@ export default function AgentLeadDetailPage() {
         leadId={lead.id}
         leadName={lead.name}
         onSuccess={fetchLead}
-      />
-
-      <FollowUpFormDialog
-        open={followUpOpen}
-        onOpenChange={setFollowUpOpen}
-        leadId={lead?.id ?? ""}
-        leadName={lead?.name ?? "this lead"}
-        onSuccess={fetchLead} // or whatever your reload fn is
       />
 
       {/* ── Reschedule Modal ─────────────────────────────────────────────── */}
