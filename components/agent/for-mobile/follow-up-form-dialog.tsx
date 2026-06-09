@@ -101,6 +101,7 @@ export function FollowUpFormDialog({
   const [serviceBrief, setServiceBrief] = useState("");
   const [whatsappSent, setWhatsappSent] = useState(false);
   const [comments, setComments] = useState("");
+  const [callDuration, setCallDuration] = useState<string>("45");
 
   const meetingLink = useMemo(() => {
     if (!platform) return "";
@@ -112,20 +113,36 @@ export function FollowUpFormDialog({
     if (connection === "NOT_CONNECTED") return 3;
     if (!outcome) return 2;
     switch (outcome) {
-      case "FOLLOW_UP_REQUIRED": return 4;
-      case "SESSION_BOOKED": return 5;
-      case "QUOTATION_SHARED": return 6;
-      case "SALE_DONE": return 7;
-      case "NOT_INTERESTED": return 8;
+      case "FOLLOW_UP_REQUIRED":
+        return 4;
+      case "SESSION_BOOKED":
+        return 5;
+      case "QUOTATION_SHARED":
+        return 6;
+      case "SALE_DONE":
+        return 7;
+      case "NOT_INTERESTED":
+        return 8;
     }
   }, [connection, outcome]);
 
   const resetAll = () => {
-    setConnection(""); setOutcome(""); setReason("");
-    setFollowUpAt(""); setSessionAt(""); setPlatform("");
-    setQuotationTitle(""); setQuotationValue(""); setNextFollowUpAt("");
-    setProjectName(""); setProjectValue(""); setSaleDate(""); setServiceBrief("");
-    setWhatsappSent(false); setComments("");
+    setConnection("");
+    setOutcome("");
+    setReason("");
+    setFollowUpAt("");
+    setSessionAt("");
+    setPlatform("");
+    setQuotationTitle("");
+    setQuotationValue("");
+    setNextFollowUpAt("");
+    setProjectName("");
+    setProjectValue("");
+    setSaleDate("");
+    setServiceBrief("");
+    setWhatsappSent(false);
+    setComments("");
+    setCallDuration("45");
   };
 
   const close = () => {
@@ -144,7 +161,9 @@ export function FollowUpFormDialog({
     try {
       await navigator.clipboard.writeText(meetingLink);
       showToast("Meeting link copied", "success");
-    } catch { showToast("Could not copy", "destructive"); }
+    } catch {
+      showToast("Could not copy", "destructive");
+    }
   };
 
   const submit = async () => {
@@ -152,61 +171,159 @@ export function FollowUpFormDialog({
     try {
       let payload: Record<string, any> = { leadId };
       if (screen === 3) {
-        if (!reason) { showToast("Please select a reason", "destructive"); setLoading(false); return; }
-        payload = { ...payload, type: "CALL_LOG",
-          callDisposition: reason === "SWITCHED_OFF" ? "SWITCHED_OFF" : "NOT_REACHABLE",
-          notConnectedReason: reason, whatsappSent,
-          notes: comments.trim() || `Not connected — ${reason}` };
+        if (!reason) {
+          showToast("Please select a reason", "destructive");
+          setLoading(false);
+          return;
+        }
+        payload = {
+          ...payload,
+          type: "CALL_LOG",
+          callDisposition:
+            reason === "SWITCHED_OFF" ? "SWITCHED_OFF" : "NOT_REACHABLE",
+          notConnectedReason: reason,
+          whatsappSent,
+          notes: comments.trim() || `Not connected — ${reason}`,
+        };
       } else if (screen === 4) {
-        if (!followUpAt || new Date(followUpAt) <= new Date()) { showToast("Pick a future date & time", "destructive"); setLoading(false); return; }
-        payload = { ...payload, type: "FOLLOW_UP_NOTE", statusAfter: "FOLLOW_UP_SCHEDULED",
-          followUpAt: new Date(followUpAt).toISOString(), whatsappSent,
-          notes: comments.trim() || "Follow-up scheduled" };
+        if (!followUpAt || new Date(followUpAt) <= new Date()) {
+          showToast("Pick a future date & time", "destructive");
+          setLoading(false);
+          return;
+        }
+        payload = {
+          ...payload,
+          type: "FOLLOW_UP_NOTE",
+          statusAfter: "FOLLOW_UP_SCHEDULED",
+          followUpAt: new Date(followUpAt).toISOString(),
+          whatsappSent,
+          callDuration: callDuration ? parseInt(callDuration, 10) : undefined,
+          notes: comments.trim() || "Follow-up scheduled",
+        };
       } else if (screen === 5) {
-        if (!sessionAt || new Date(sessionAt) <= new Date()) { showToast("Pick a future session date & time", "destructive"); setLoading(false); return; }
-        if (!platform) { showToast("Select a meeting platform", "destructive"); setLoading(false); return; }
-        if (platform === "PERSONAL" && !meetingLink) { showToast("Add a personal meeting link to your profile first", "destructive"); setLoading(false); return; }
-        payload = { ...payload, type: "MEETING_SCHEDULED", statusAfter: "QUALIFIED",
-          sessionAt: new Date(sessionAt).toISOString(), meetingPlatform: platform, meetingLink, whatsappSent,
-          notes: comments.trim() || `Session booked on ${platform}` };
+        if (!sessionAt || new Date(sessionAt) <= new Date()) {
+          showToast("Pick a future session date & time", "destructive");
+          setLoading(false);
+          return;
+        }
+        if (!platform) {
+          showToast("Select a meeting platform", "destructive");
+          setLoading(false);
+          return;
+        }
+        if (platform === "PERSONAL" && !meetingLink) {
+          showToast(
+            "Add a personal meeting link to your profile first",
+            "destructive",
+          );
+          setLoading(false);
+          return;
+        }
+        payload = {
+          ...payload,
+          type: "MEETING_SCHEDULED",
+          statusAfter: "QUALIFIED",
+          sessionAt: new Date(sessionAt).toISOString(),
+          meetingPlatform: platform,
+          meetingLink,
+          whatsappSent,
+          notes: comments.trim() || `Session booked on ${platform}`,
+        };
       } else if (screen === 6) {
-        if (!quotationTitle.trim()) { showToast("Quotation title required", "destructive"); setLoading(false); return; }
+        if (!quotationTitle.trim()) {
+          showToast("Quotation title required", "destructive");
+          setLoading(false);
+          return;
+        }
         const qv = parseFloat(quotationValue);
-        if (isNaN(qv) || qv <= 0) { showToast("Enter a valid quotation value", "destructive"); setLoading(false); return; }
-        if (!nextFollowUpAt || new Date(nextFollowUpAt) <= new Date()) { showToast("Pick a future follow-up date & time", "destructive"); setLoading(false); return; }
-        payload = { ...payload, type: "FOLLOW_UP_NOTE", statusAfter: "NEGOTIATION",
-          quotationTitle: quotationTitle.trim(), quotationValue: qv,
+        if (isNaN(qv) || qv <= 0) {
+          showToast("Enter a valid quotation value", "destructive");
+          setLoading(false);
+          return;
+        }
+        if (!nextFollowUpAt || new Date(nextFollowUpAt) <= new Date()) {
+          showToast("Pick a future follow-up date & time", "destructive");
+          setLoading(false);
+          return;
+        }
+        payload = {
+          ...payload,
+          type: "FOLLOW_UP_NOTE",
+          statusAfter: "NEGOTIATION",
+          quotationTitle: quotationTitle.trim(),
+          quotationValue: qv,
           followUpAt: new Date(nextFollowUpAt).toISOString(),
-          notes: comments.trim() || `Quotation "${quotationTitle.trim()}" shared — ₹${qv}` };
+          notes:
+            comments.trim() ||
+            `Quotation "${quotationTitle.trim()}" shared — ₹${qv}`,
+        };
       } else if (screen === 7) {
-        if (!projectName.trim()) { showToast("Project name required", "destructive"); setLoading(false); return; }
+        if (!projectName.trim()) {
+          showToast("Project name required", "destructive");
+          setLoading(false);
+          return;
+        }
         const pv = parseFloat(projectValue);
-        if (isNaN(pv) || pv <= 0) { showToast("Enter a valid project value", "destructive"); setLoading(false); return; }
-        if (!saleDate || new Date(saleDate) > new Date()) { showToast("Sale date cannot be in the future", "destructive"); setLoading(false); return; }
-        payload = { ...payload, type: "STATUS_CHANGE", statusAfter: "CONVERTED",
-          projectName: projectName.trim(), conversionValue: pv, productSelected: projectName.trim(),
-          saleDate: new Date(saleDate).toISOString(), serviceBrief: serviceBrief.trim() || undefined,
-          notes: `Sale Done — ${projectName.trim()} (₹${pv})` };
+        if (isNaN(pv) || pv <= 0) {
+          showToast("Enter a valid project value", "destructive");
+          setLoading(false);
+          return;
+        }
+        if (!saleDate || new Date(saleDate) > new Date()) {
+          showToast("Sale date cannot be in the future", "destructive");
+          setLoading(false);
+          return;
+        }
+        payload = {
+          ...payload,
+          type: "STATUS_CHANGE",
+          statusAfter: "CONVERTED",
+          projectName: projectName.trim(),
+          conversionValue: pv,
+          productSelected: projectName.trim(),
+          saleDate: new Date(saleDate).toISOString(),
+          serviceBrief: serviceBrief.trim() || undefined,
+          notes: `Sale Done — ${projectName.trim()} (₹${pv})`,
+        };
       } else if (screen === 8) {
-        payload = { ...payload, type: "STATUS_CHANGE", statusAfter: "NOT_INTERESTED",
-          notes: comments.trim() || "Marked as Not Interested" };
-      } else { setLoading(false); return; }
+        payload = {
+          ...payload,
+          type: "STATUS_CHANGE",
+          statusAfter: "NOT_INTERESTED",
+          notes: comments.trim() || "Marked as Not Interested",
+        };
+      } else {
+        setLoading(false);
+        return;
+      }
 
       await api.post("/agent/conversation", payload);
       showToast("Follow-up saved", "success");
-      setTimeout(() => { onSuccess(); close(); }, 500);
+      setTimeout(() => {
+        onSuccess();
+        close();
+      }, 500);
     } catch (err: any) {
-      showToast(err?.response?.data?.message ?? "Failed to save follow-up", "destructive");
-    } finally { setLoading(false); }
+      showToast(
+        err?.response?.data?.message ?? "Failed to save follow-up",
+        "destructive",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isSubmitScreen = screen >= 3;
-  const stepLabel = screen === 1 ? "Connection" : screen === 2 ? "Outcome" : "Details";
+  const stepLabel =
+    screen === 1 ? "Connection" : screen === 2 ? "Outcome" : "Details";
 
   return (
     <>
       {ToastComponent}
-      <Dialog open={open} onOpenChange={(o) => !loading && (o ? onOpenChange(o) : close())}>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => !loading && (o ? onOpenChange(o) : close())}
+      >
         <DialogContent
           className="
             p-0 gap-0 border-0 shadow-2xl overflow-hidden
@@ -270,7 +387,9 @@ export function FollowUpFormDialog({
                   </div>
                   <div className="flex-1">
                     <div className="font-bold text-slate-900">Connected</div>
-                    <div className="text-xs text-slate-500 mt-0.5">Spoke to the lead</div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      Spoke to the lead
+                    </div>
                   </div>
                   <ArrowRight size={18} className="text-slate-400" />
                 </button>
@@ -282,8 +401,12 @@ export function FollowUpFormDialog({
                     <PhoneOff size={22} />
                   </div>
                   <div className="flex-1">
-                    <div className="font-bold text-slate-900">Not Connected</div>
-                    <div className="text-xs text-slate-500 mt-0.5">Couldn't reach them</div>
+                    <div className="font-bold text-slate-900">
+                      Not Connected
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      Couldn't reach them
+                    </div>
                   </div>
                   <ArrowRight size={18} className="text-slate-400" />
                 </button>
@@ -293,11 +416,36 @@ export function FollowUpFormDialog({
             {screen === 2 && (
               <div className="grid grid-cols-1 gap-2">
                 {[
-                  { id: "FOLLOW_UP_REQUIRED", label: "Follow Up Required", icon: CalendarClock, color: "indigo" },
-                  { id: "SESSION_BOOKED", label: "Session Booked", icon: Video, color: "violet" },
-                  { id: "QUOTATION_SHARED", label: "Quotation Finalized & Shared", icon: ClipboardList, color: "blue" },
-                  { id: "SALE_DONE", label: "Sale Done", icon: CheckCircle2, color: "emerald" },
-                  { id: "NOT_INTERESTED", label: "Not Interested", icon: XCircle, color: "rose" },
+                  {
+                    id: "FOLLOW_UP_REQUIRED",
+                    label: "Follow Up Required",
+                    icon: CalendarClock,
+                    color: "indigo",
+                  },
+                  {
+                    id: "SESSION_BOOKED",
+                    label: "Session Booked",
+                    icon: Video,
+                    color: "violet",
+                  },
+                  {
+                    id: "QUOTATION_SHARED",
+                    label: "Quotation Finalized & Shared",
+                    icon: ClipboardList,
+                    color: "blue",
+                  },
+                  {
+                    id: "SALE_DONE",
+                    label: "Sale Done",
+                    icon: CheckCircle2,
+                    color: "emerald",
+                  },
+                  {
+                    id: "NOT_INTERESTED",
+                    label: "Not Interested",
+                    icon: XCircle,
+                    color: "rose",
+                  },
                 ].map((o) => {
                   const Icon = o.icon;
                   return (
@@ -306,10 +454,14 @@ export function FollowUpFormDialog({
                       onClick={() => setOutcome(o.id as Outcome)}
                       className="w-full p-4 rounded-2xl border border-slate-200 active:bg-slate-50 flex items-center gap-3 text-left transition"
                     >
-                      <div className={`w-10 h-10 rounded-xl bg-${o.color}-100 text-${o.color}-700 grid place-items-center shrink-0`}>
+                      <div
+                        className={`w-10 h-10 rounded-xl bg-${o.color}-100 text-${o.color}-700 grid place-items-center shrink-0`}
+                      >
                         <Icon size={18} />
                       </div>
-                      <span className="font-semibold text-slate-800 flex-1">{o.label}</span>
+                      <span className="font-semibold text-slate-800 flex-1">
+                        {o.label}
+                      </span>
                       <ArrowRight size={16} className="text-slate-400" />
                     </button>
                   );
@@ -320,11 +472,18 @@ export function FollowUpFormDialog({
             {screen === 3 && (
               <>
                 <Field label="Reason">
-                  <Select value={reason} onValueChange={(v) => setReason(v as NotConnReason)}>
-                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Select reason" /></SelectTrigger>
+                  <Select
+                    value={reason}
+                    onValueChange={(v) => setReason(v as NotConnReason)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue placeholder="Select reason" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="SWITCHED_OFF">Switched Off</SelectItem>
-                      <SelectItem value="NOT_REACHABLE">Not Reachable</SelectItem>
+                      <SelectItem value="NOT_REACHABLE">
+                        Not Reachable
+                      </SelectItem>
                       <SelectItem value="DNP">Did Not Pick (DNP)</SelectItem>
                       <SelectItem value="OTHERS">Others</SelectItem>
                     </SelectContent>
@@ -332,19 +491,46 @@ export function FollowUpFormDialog({
                 </Field>
                 <WaRow value={whatsappSent} onChange={setWhatsappSent} />
                 <Field label="Comments" optional>
-                  <Textarea rows={3} className="rounded-xl" value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Add notes…" />
+                  <Textarea
+                    rows={3}
+                    className="rounded-xl"
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                    placeholder="Add notes…"
+                  />
                 </Field>
               </>
             )}
 
             {screen === 4 && (
               <>
+                <Field label="Call Duration (seconds)">
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-12 rounded-xl text-base"
+                    value={callDuration}
+                    onChange={(e) => setCallDuration(e.target.value)}
+                    placeholder="e.g. 45"
+                  />
+                </Field>
                 <Field label="Follow-Up Date & Time">
-                  <Input type="datetime-local" min={nowLocalIso()} className="h-12 rounded-xl text-base" value={followUpAt} onChange={(e) => setFollowUpAt(e.target.value)} />
+                  <Input
+                    type="datetime-local"
+                    min={nowLocalIso()}
+                    className="h-12 rounded-xl text-base"
+                    value={followUpAt}
+                    onChange={(e) => setFollowUpAt(e.target.value)}
+                  />
                 </Field>
                 <WaRow value={whatsappSent} onChange={setWhatsappSent} />
                 <Field label="Comments" optional>
-                  <Textarea rows={3} className="rounded-xl" value={comments} onChange={(e) => setComments(e.target.value)} />
+                  <Textarea
+                    rows={3}
+                    className="rounded-xl"
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                  />
                 </Field>
               </>
             )}
@@ -352,11 +538,22 @@ export function FollowUpFormDialog({
             {screen === 5 && (
               <>
                 <Field label="Session Date & Time">
-                  <Input type="datetime-local" min={nowLocalIso()} className="h-12 rounded-xl text-base" value={sessionAt} onChange={(e) => setSessionAt(e.target.value)} />
+                  <Input
+                    type="datetime-local"
+                    min={nowLocalIso()}
+                    className="h-12 rounded-xl text-base"
+                    value={sessionAt}
+                    onChange={(e) => setSessionAt(e.target.value)}
+                  />
                 </Field>
                 <Field label="Meeting Platform">
-                  <Select value={platform} onValueChange={(v) => setPlatform(v as MeetingPlatform)}>
-                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Choose platform" /></SelectTrigger>
+                  <Select
+                    value={platform}
+                    onValueChange={(v) => setPlatform(v as MeetingPlatform)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue placeholder="Choose platform" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="GOOGLE_MEET">Google Meet</SelectItem>
                       <SelectItem value="ZOOM">Zoom</SelectItem>
@@ -367,8 +564,18 @@ export function FollowUpFormDialog({
                 {platform && (
                   <Field label="Meeting Link">
                     <div className="flex gap-2">
-                      <Input value={meetingLink} readOnly className="h-12 rounded-xl bg-slate-50 text-sm" />
-                      <Button type="button" variant="outline" className="h-12 rounded-xl" onClick={copyMeeting} disabled={!meetingLink}>
+                      <Input
+                        value={meetingLink}
+                        readOnly
+                        className="h-12 rounded-xl bg-slate-50 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-12 rounded-xl"
+                        onClick={copyMeeting}
+                        disabled={!meetingLink}
+                      >
                         <Copy size={16} />
                       </Button>
                     </div>
@@ -376,7 +583,12 @@ export function FollowUpFormDialog({
                 )}
                 <WaRow value={whatsappSent} onChange={setWhatsappSent} />
                 <Field label="Comments" optional>
-                  <Textarea rows={3} className="rounded-xl" value={comments} onChange={(e) => setComments(e.target.value)} />
+                  <Textarea
+                    rows={3}
+                    className="rounded-xl"
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                  />
                 </Field>
               </>
             )}
@@ -384,16 +596,40 @@ export function FollowUpFormDialog({
             {screen === 6 && (
               <>
                 <Field label="Quotation Title">
-                  <Input className="h-12 rounded-xl text-base" value={quotationTitle} onChange={(e) => setQuotationTitle(e.target.value)} placeholder="e.g. Pro Plan – 12 months" />
+                  <Input
+                    className="h-12 rounded-xl text-base"
+                    value={quotationTitle}
+                    onChange={(e) => setQuotationTitle(e.target.value)}
+                    placeholder="e.g. Pro Plan – 12 months"
+                  />
                 </Field>
                 <Field label="Quotation Value (₹)">
-                  <Input type="number" inputMode="decimal" min="0" className="h-12 rounded-xl text-base" value={quotationValue} onChange={(e) => setQuotationValue(e.target.value)} placeholder="0.00" />
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    className="h-12 rounded-xl text-base"
+                    value={quotationValue}
+                    onChange={(e) => setQuotationValue(e.target.value)}
+                    placeholder="0.00"
+                  />
                 </Field>
                 <Field label="Next Follow-Up Date & Time">
-                  <Input type="datetime-local" min={nowLocalIso()} className="h-12 rounded-xl text-base" value={nextFollowUpAt} onChange={(e) => setNextFollowUpAt(e.target.value)} />
+                  <Input
+                    type="datetime-local"
+                    min={nowLocalIso()}
+                    className="h-12 rounded-xl text-base"
+                    value={nextFollowUpAt}
+                    onChange={(e) => setNextFollowUpAt(e.target.value)}
+                  />
                 </Field>
                 <Field label="Comments" optional>
-                  <Textarea rows={3} className="rounded-xl" value={comments} onChange={(e) => setComments(e.target.value)} />
+                  <Textarea
+                    rows={3}
+                    className="rounded-xl"
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                  />
                 </Field>
               </>
             )}
@@ -401,30 +637,66 @@ export function FollowUpFormDialog({
             {screen === 7 && (
               <>
                 <Field label="Project Name">
-                  <Input className="h-12 rounded-xl text-base" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g. Website Revamp" />
+                  <Input
+                    className="h-12 rounded-xl text-base"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    placeholder="e.g. Website Revamp"
+                  />
                 </Field>
                 <Field label="Project Value (₹)">
-                  <Input type="number" inputMode="decimal" min="0" className="h-12 rounded-xl text-base" value={projectValue} onChange={(e) => setProjectValue(e.target.value)} placeholder="0.00" />
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    className="h-12 rounded-xl text-base"
+                    value={projectValue}
+                    onChange={(e) => setProjectValue(e.target.value)}
+                    placeholder="0.00"
+                  />
                 </Field>
                 <Field label="Sale Date">
-                  <Input type="date" max={todayLocalIso()} className="h-12 rounded-xl text-base" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} />
+                  <Input
+                    type="date"
+                    max={todayLocalIso()}
+                    className="h-12 rounded-xl text-base"
+                    value={saleDate}
+                    onChange={(e) => setSaleDate(e.target.value)}
+                  />
                 </Field>
                 <Field label="Service Brief">
-                  <Textarea rows={4} className="rounded-xl" value={serviceBrief} onChange={(e) => setServiceBrief(e.target.value)} placeholder="What was sold and any key terms" />
+                  <Textarea
+                    rows={4}
+                    className="rounded-xl"
+                    value={serviceBrief}
+                    onChange={(e) => setServiceBrief(e.target.value)}
+                    placeholder="What was sold and any key terms"
+                  />
                 </Field>
               </>
             )}
 
             {screen === 8 && (
               <Field label="Comments">
-                <Textarea rows={4} className="rounded-xl" value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Why are they not interested?" />
+                <Textarea
+                  rows={4}
+                  className="rounded-xl"
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  placeholder="Why are they not interested?"
+                />
               </Field>
             )}
           </div>
 
           {isSubmitScreen && (
             <div className="px-5 py-3 border-t bg-white shrink-0 flex gap-2 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
-              <Button variant="outline" disabled={loading} onClick={close} className="h-12 rounded-xl flex-1 font-semibold">
+              <Button
+                variant="outline"
+                disabled={loading}
+                onClick={close}
+                className="h-12 rounded-xl flex-1 font-semibold"
+              >
                 Cancel
               </Button>
               <Button
@@ -443,21 +715,40 @@ export function FollowUpFormDialog({
 }
 
 // helpers
-function Field({ label, optional, children }: { label: string; optional?: boolean; children: React.ReactNode }) {
+function Field({
+  label,
+  optional,
+  children,
+}: {
+  label: string;
+  optional?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-sm font-semibold text-slate-700">
-        {label} {optional && <span className="text-xs font-normal text-slate-400">(optional)</span>}
+        {label}{" "}
+        {optional && (
+          <span className="text-xs font-normal text-slate-400">(optional)</span>
+        )}
       </Label>
       {children}
     </div>
   );
 }
-function WaRow({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+function WaRow({
+  value,
+  onChange,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 active:bg-slate-50 cursor-pointer">
       <Checkbox checked={value} onCheckedChange={(v) => onChange(Boolean(v))} />
-      <span className="text-sm font-medium text-slate-700">Communication sent on WhatsApp</span>
+      <span className="text-sm font-medium text-slate-700">
+        Communication sent on WhatsApp
+      </span>
     </label>
   );
 }

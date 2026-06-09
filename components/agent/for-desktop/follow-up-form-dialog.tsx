@@ -111,6 +111,9 @@ export function FollowUpFormDialog({
   const [whatsappSent, setWhatsappSent] = useState(false);
   const [comments, setComments] = useState("");
 
+  const [callDuration, setCallDuration] = useState<string>("45");
+  
+
   const meetingLink = useMemo(() => {
     if (!platform) return "";
     return platform === "PERSONAL" ? personalMeetingLink : MEET_LINKS[platform];
@@ -215,6 +218,7 @@ export function FollowUpFormDialog({
           type: "FOLLOW_UP_NOTE",
           statusAfter: "FOLLOW_UP_SCHEDULED",
           followUpAt: new Date(followUpAt).toISOString(),
+          callDuration: callDuration ? parseInt(callDuration, 10) : undefined,
           whatsappSent,
           notes: comments.trim() || "Follow-up scheduled",
         };
@@ -345,7 +349,10 @@ export function FollowUpFormDialog({
   return (
     <>
       {ToastComponent}
-      <Dialog open={open} onOpenChange={(o) => !loading && (o ? onOpenChange(o) : close())}>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => !loading && (o ? onOpenChange(o) : close())}
+      >
         <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden">
           <DialogHeader className="px-6 pt-5 pb-4 border-b">
             <div className="flex items-center gap-3">
@@ -402,11 +409,36 @@ export function FollowUpFormDialog({
             {screen === 2 && (
               <div className="grid grid-cols-1 gap-2">
                 {[
-                  { id: "FOLLOW_UP_REQUIRED", label: "Follow Up Required", icon: CalendarClock, color: "indigo" },
-                  { id: "SESSION_BOOKED", label: "Session Booked", icon: Video, color: "violet" },
-                  { id: "QUOTATION_SHARED", label: "Quotation Finalized & Shared", icon: ClipboardList, color: "blue" },
-                  { id: "SALE_DONE", label: "Sale Done", icon: CheckCircle2, color: "emerald" },
-                  { id: "NOT_INTERESTED", label: "Not Interested", icon: XCircle, color: "rose" },
+                  {
+                    id: "FOLLOW_UP_REQUIRED",
+                    label: "Follow Up Required",
+                    icon: CalendarClock,
+                    color: "indigo",
+                  },
+                  {
+                    id: "SESSION_BOOKED",
+                    label: "Session Booked",
+                    icon: Video,
+                    color: "violet",
+                  },
+                  {
+                    id: "QUOTATION_SHARED",
+                    label: "Quotation Finalized & Shared",
+                    icon: ClipboardList,
+                    color: "blue",
+                  },
+                  {
+                    id: "SALE_DONE",
+                    label: "Sale Done",
+                    icon: CheckCircle2,
+                    color: "emerald",
+                  },
+                  {
+                    id: "NOT_INTERESTED",
+                    label: "Not Interested",
+                    icon: XCircle,
+                    color: "rose",
+                  },
                 ].map((o) => {
                   const Icon = o.icon;
                   return (
@@ -431,11 +463,18 @@ export function FollowUpFormDialog({
               <>
                 <div className="space-y-2">
                   <Label>Reason</Label>
-                  <Select value={reason} onValueChange={(v) => setReason(v as NotConnReason)}>
-                    <SelectTrigger><SelectValue placeholder="Select reason" /></SelectTrigger>
+                  <Select
+                    value={reason}
+                    onValueChange={(v) => setReason(v as NotConnReason)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select reason" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="SWITCHED_OFF">Switched Off</SelectItem>
-                      <SelectItem value="NOT_REACHABLE">Not Reachable</SelectItem>
+                      <SelectItem value="NOT_REACHABLE">
+                        Not Reachable
+                      </SelectItem>
                       <SelectItem value="DNP">Did Not Pick (DNP)</SelectItem>
                       <SelectItem value="OTHERS">Others</SelectItem>
                     </SelectContent>
@@ -449,6 +488,19 @@ export function FollowUpFormDialog({
             {/* Screen 4 — Follow Up Required */}
             {screen === 4 && (
               <>
+                <div className="space-y-1.5">
+                  <Label className="font-semibold text-slate-700 text-xs">
+                    Call Duration (seconds)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="seconds"
+                    value={callDuration}
+                    onChange={(e) => setCallDuration(e.target.value)}
+                    className="h-10 rounded-xl w-full"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label>Follow-Up Date & Time</Label>
                   <Input
@@ -477,8 +529,13 @@ export function FollowUpFormDialog({
                 </div>
                 <div className="space-y-2">
                   <Label>Meeting Platform</Label>
-                  <Select value={platform} onValueChange={(v) => setPlatform(v as MeetingPlatform)}>
-                    <SelectTrigger><SelectValue placeholder="Choose platform" /></SelectTrigger>
+                  <Select
+                    value={platform}
+                    onValueChange={(v) => setPlatform(v as MeetingPlatform)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose platform" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="GOOGLE_MEET">Google Meet</SelectItem>
                       <SelectItem value="ZOOM">Zoom</SelectItem>
@@ -490,7 +547,11 @@ export function FollowUpFormDialog({
                   <div className="space-y-2">
                     <Label>Meeting Link</Label>
                     <div className="flex gap-2">
-                      <Input value={meetingLink} readOnly className="bg-slate-50" />
+                      <Input
+                        value={meetingLink}
+                        readOnly
+                        className="bg-slate-50"
+                      />
                       <Button
                         type="button"
                         variant="outline"
@@ -644,7 +705,14 @@ function CommentsRow({
 }) {
   return (
     <div className="space-y-2">
-      <Label>Comments {required ? "" : <span className="text-xs text-slate-400">(optional)</span>}</Label>
+      <Label>
+        Comments{" "}
+        {required ? (
+          ""
+        ) : (
+          <span className="text-xs text-slate-400">(optional)</span>
+        )}
+      </Label>
       <Textarea
         rows={3}
         value={value}

@@ -801,8 +801,8 @@ export default function AgentLeadDetailPage() {
                   <div className="text-sm text-slate-500 tracking-wide font-medium break-all">
                     {/* <span className="font-mono">{lead.phone}</span> */}
                     <span className="text-slate-300 mx-1.5">·</span>
-                    <span className="text-slate-400 font-sans">{lead.data.email || lead.data["Contact Email"]}</span>
-                    <span className="text-slate-400 font-sans">{lead.data["Industry / Sector"]}</span>
+                    <span className="text-slate-400 font-sans">{lead.data?.email || lead.data?.["Contact Email"]}</span>
+                    <span className="text-slate-400 font-sans">{lead.data?.["Industry / Sector"]}</span>
                   </div>
                 </div>
 
@@ -968,8 +968,8 @@ export default function AgentLeadDetailPage() {
                     {[
                       { label: "Name", value: lead.name },
                       // { label: "Mobile Number", value: lead.phone },
-                      { label: "Email", value: lead.data.email },
-                      { label: "City / State", value: lead.data.city },
+                      { label: "Email", value: lead.data?.email },
+                      { label: "City / State", value: lead.data?.["City / Location"] },
                       {
                         label: "Created Time",
                         value: formatDateTime(lead.createdAt),

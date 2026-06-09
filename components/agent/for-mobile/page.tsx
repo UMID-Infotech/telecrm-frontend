@@ -880,7 +880,9 @@ export default function AgentLeadDetailPage() {
               {/* {email && email !== "Not Available" && (
                 <p className="text-xs text-blue-200 mt-0.5 truncate">{email}</p>
               )} */}
-                    <span className="text-slate-400 font-sans">{lead.data["Industry / Sector"]}</span>
+              <span className="text-slate-400 font-sans">
+                {lead.data?.["Industry / Sector"]}
+              </span>
             </div>
           </div>
 
@@ -1045,8 +1047,14 @@ export default function AgentLeadDetailPage() {
             {[
               { label: "Name", value: lead.name },
               // { label: "Mobile", value: lead.phone },
-              { label: "Email", value: lead.email || lead.data["Contact Email"] },
-              { label: "City / State", value: lead.city || lead.data["City / Location"] },
+              {
+                label: "Email",
+                value: lead.email || lead.data?.["Contact Email"],
+              },
+              {
+                label: "City / State",
+                value: lead.city || lead.data?.["City / Location"],
+              },
               { label: "Created", value: formatDateTime(lead.createdAt) },
             ].map((row) => (
               <div
