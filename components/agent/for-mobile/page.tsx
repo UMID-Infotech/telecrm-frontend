@@ -1049,11 +1049,11 @@ export default function AgentLeadDetailPage() {
               // { label: "Mobile", value: lead.phone },
               {
                 label: "Email",
-                value: lead.email || lead.data?.["Contact Email"],
+                value: lead.data?.email || lead.data?.["Contact Email"],
               },
               {
                 label: "City / State",
-                value: lead.city || lead.data?.["City / Location"],
+                value: lead.data?.city || lead.data?.["City / Location"],
               },
               { label: "Created", value: formatDateTime(lead.createdAt) },
             ].map((row) => (
