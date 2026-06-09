@@ -30,7 +30,7 @@ export default function AgentSidebar() {
           <span>My Leads</span>
         </Link>
         <Link
-          href="/leads/create"
+          href="/agent/leads/create"
           className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors"
         >
           <PlusCircle size={18} />
