@@ -480,7 +480,7 @@ export function FollowUpFormDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                {/* <WhatsAppRow value={whatsappSent} onChange={setWhatsappSent} /> */}
+                <WhatsAppRow value={whatsappSent} onChange={setWhatsappSent} />
                 <CommentsRow value={comments} onChange={setComments} />
               </>
             )}
@@ -510,7 +510,7 @@ export function FollowUpFormDialog({
                     onChange={(e) => setFollowUpAt(e.target.value)}
                   />
                 </div>
-                {/* <WhatsAppRow value={whatsappSent} onChange={setWhatsappSent} /> */}
+                <WhatsAppRow value={whatsappSent} onChange={setWhatsappSent} />
                 <CommentsRow value={comments} onChange={setComments} />
               </>
             )}
@@ -568,7 +568,7 @@ export function FollowUpFormDialog({
                     )}
                   </div>
                 )}
-                {/* <WhatsAppRow value={whatsappSent} onChange={setWhatsappSent} /> */}
+                <WhatsAppRow value={whatsappSent} onChange={setWhatsappSent} />
                 <CommentsRow value={comments} onChange={setComments} />
               </>
             )}
