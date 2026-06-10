@@ -845,11 +845,11 @@ export default function AgentLeadDetailPage() {
           </button>
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-              Lead
+              Lead Page
             </p>
-            <p className="text-[15px] font-bold text-slate-900 truncate leading-tight mt-0.5">
+            {/* <p className="text-[15px] font-bold text-slate-900 truncate leading-tight mt-0.5">
               {lead.name}
-            </p>
+            </p> */}
           </div>
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${leadPriorityObj.cls} shrink-0`}
@@ -1044,31 +1044,161 @@ export default function AgentLeadDetailPage() {
         {/* ── Collapsible Details ───────────────────────────────────────── */}
         <Section icon={<Info size={16} />} title="Lead Details">
           <dl className="space-y-3">
-            {[
-              { label: "Name", value: lead.name },
-              // { label: "Mobile", value: lead.phone },
-              {
-                label: "Email",
-                value: lead.data?.email || lead.data?.["Contact Email"],
-              },
-              {
-                label: "City / State",
-                value: lead.data?.city || lead.data?.["City / Location"],
-              },
-              { label: "Created", value: formatDateTime(lead.createdAt) },
-            ].map((row) => (
-              <div
-                key={row.label}
-                className="border-b border-slate-50 pb-2 last:border-0 last:pb-0"
-              >
-                <dt className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                  {row.label}
-                </dt>
-                <dd className="text-sm font-semibold text-slate-800 break-words mt-0.5">
-                  {row.value}
-                </dd>
-              </div>
-            ))}
+            {
+              // [
+              //   { label: "Name", value: lead.name },
+              //   // { label: "Mobile", value: lead.phone },
+              //   {
+              //     label: "Email",
+              //     value: lead.data?.email || lead.data?.["Contact Email"],
+              //   },
+              //   {
+              //     label: "City / State",
+              //     value: lead.data?.city || lead.data?.["City / Location"],
+              //   },
+
+              //   { label: "Created", value: formatDateTime(lead.createdAt) },
+              // ]
+              [
+                { label: "Name", value: lead?.name },
+
+                // { label: "Mobile", value: lead.phone },
+
+                {
+                  label: "Email",
+                  value: lead?.data?.email || lead?.data?.["Contact Email"],
+                },
+
+                {
+                  label: "City / State",
+                  value: lead?.data?.city || lead?.data?.["City / Location"],
+                },
+
+                // {
+                //   label: "Business Name",
+                //   value:
+                //     lead?.data?.businessName || lead?.data?.["Business Name"],
+                // },
+
+                {
+                  label: "Industry / Sector",
+                  value:
+                    lead?.data?.industry || lead?.data?.["Industry / Sector"],
+                },
+
+                {
+                  label: "Website (Y/N)",
+                  value:
+                    lead?.data?.websiteAvailable ||
+                    lead?.data?.["Website (Y/N)"],
+                },
+
+                {
+                  label: "Website Link",
+                  value:
+                    lead?.data?.websiteLink || lead?.data?.["Website Link"],
+                },
+
+                {
+                  label: "Social Media",
+                  value:
+                    lead?.data?.socialMedia || lead?.data?.["Social Media"],
+                },
+
+                {
+                  label: "Quality of Online Presence",
+                  value:
+                    lead?.data?.qualityOfOnlinePresence ||
+                    lead?.data?.["Quality of Online Presence"],
+                },
+
+                {
+                  label: "Contact Number",
+                  value:
+                    lead?.data?.contactNumber || lead?.data?.["Contact Number"],
+                },
+
+                {
+                  label: "Profile Link",
+                  value:
+                    lead?.data?.profileLink ||
+                    lead?.data?.["Profile Link (Link of Social Media Page)"],
+                },
+
+                {
+                  label: "Contact Email",
+                  value:
+                    lead?.data?.contactEmail || lead?.data?.["Contact Email"],
+                },
+
+                {
+                  label: "Need Identified",
+                  value:
+                    lead?.data?.needIdentified ||
+                    lead?.data?.["Need Identified"],
+                },
+
+                {
+                  label: "Source of Lead",
+                  value:
+                    lead?.data?.sourceOfLead || lead?.data?.["Source of Lead"],
+                },
+
+                {
+                  label: "Priority Level",
+                  value:
+                    lead?.data?.priorityLevel || lead?.data?.["Priority Level"],
+                },
+
+                {
+                  label: "Outreach Status",
+                  value:
+                    lead?.data?.outreachStatus ||
+                    lead?.data?.["Outreach Status"],
+                },
+
+                {
+                  label: "Next Follow-Up Date",
+                  value:
+                    lead?.data?.nextFollowUpDate ||
+                    lead?.data?.["Next Follow-Up Date"],
+                },
+
+                {
+                  label: "Notes",
+                  value: lead?.data?.notes || lead?.data?.["Notes"],
+                },
+
+                {
+                  label: "Additional Comments",
+                  value:
+                    lead?.data?.additionalComments ||
+                    lead?.data?.["Additional Comments"],
+                },
+
+                {
+                  label: "Source Link",
+                  value: lead?.data?.sourceLink || lead?.data?.["Source Link"],
+                },
+
+                {
+                  label: "Created",
+                  value: formatDateTime(lead?.createdAt),
+                },
+              ].map((row) => (
+                <div
+                  key={row.label}
+                  className="border-b border-slate-50 pb-2 last:border-0 last:pb-0"
+                >
+                  <dt className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    {row.label}
+                  </dt>
+                  <dd className="text-sm font-semibold text-slate-800 break-words mt-0.5">
+                    {row.value}
+                  </dd>
+                </div>
+              ))
+            }
           </dl>
         </Section>
 
