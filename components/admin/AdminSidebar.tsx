@@ -1,5 +1,5 @@
 // teleCRM/components/admin/AdminSidebar.tsx
-import Link from 'next/link';
+import Link from "next/link";
 import {
   LayoutDashboard,
   UserPlus,
@@ -7,8 +7,8 @@ import {
   Users,
   ClipboardList,
   PlusCircle,
-} from 'lucide-react';
-import { FiBookOpen } from 'react-icons/fi';
+} from "lucide-react";
+import { FiBookOpen } from "react-icons/fi";
 
 export default function AdminSidebar() {
   return (
@@ -43,6 +43,13 @@ export default function AdminSidebar() {
           <span>Create Team</span>
         </Link>
         <Link
+          href="/admin/leads/create"
+          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800"
+        >
+          <PlusCircle size={18} />
+          <span>Create Lead</span>
+        </Link>
+        <Link
           href="/admin/leads"
           className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800"
         >
@@ -50,11 +57,11 @@ export default function AdminSidebar() {
           <span>Leads</span>
         </Link>
         <Link
-          href="/admin/leads/create"
+          href="/admin/leads/assigned"
           className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800"
         >
-          <PlusCircle size={18} />
-          <span>Create Lead</span>
+          <ClipboardList size={18} />
+          <span>Assigned Leads</span>
         </Link>
         <Link
           href="/admin/guide-blogs"

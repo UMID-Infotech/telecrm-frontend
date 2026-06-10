@@ -798,11 +798,11 @@ export default function AgentLeadDetailPage() {
                     )}
                   </div>
                   {/* Phone + email — stack on very small screens */}
-                  <div className="text-sm text-slate-500 tracking-wide font-medium break-all">
+                  <div className="text-sm text-slate-500 tracking-wide font-medium break-all flex flex-wrap items-center gap-3">
                     {/* <span className="font-mono">{lead.phone}</span> */}
                     <span className="text-slate-300 mx-1.5">·</span>
                     <span className="text-slate-400 font-sans">
-                      {lead.data?.email || lead.data?.["Contact Email"]}
+                      {lead.data?.email || lead.data?.["Contact Email"] }
                     </span>
                     <span className="text-slate-400 font-sans">
                       {lead.data?.["Industry / Sector"]}

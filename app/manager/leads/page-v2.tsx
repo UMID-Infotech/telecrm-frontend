@@ -52,7 +52,6 @@ interface Agent {
   _count: { assignedLeads: number };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const priorityBadge = (p: Lead["priority"]) => {
   const cls: Record<Lead["priority"], string> = {
     HIGH: "bg-red-100 text-red-700",
@@ -89,7 +88,8 @@ const stageBadge = (stage: Lead["distributionStage"]) => {
   );
 };
 
-// ─── Select-All Checkbox (uses indeterminate DOM property) ────────────────────
+// ─── Select-All Checkbox ──────────────────────────────────────────────────────
+// Uses the indeterminate DOM property which isn't a React prop, so we use a ref.
 function SelectAllCheckbox({
   checked,
   indeterminate,
@@ -102,7 +102,9 @@ function SelectAllCheckbox({
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (ref.current) ref.current.indeterminate = indeterminate;
+    if (ref.current) {
+      ref.current.indeterminate = indeterminate;
+    }
   }, [indeterminate]);
 
   return (
@@ -123,19 +125,15 @@ export default function ManagerLeadsPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"POOL" | "ASSIGNED">("POOL");
 
-  // ── Pool distribution state ──────────────────────────────────────────────
+  // Selection mode — activated when the user clicks "Distribute" on any row
   const [selectionMode, setSelectionMode] = useState(false);
+
+  // Distribution dialog
   const [distDialog, setDistDialog] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [distMode, setDistMode] = useState<"MANUAL" | "AUTO">("MANUAL");
   const [distAgentId, setDistAgentId] = useState("");
   const [distLoading, setDistLoading] = useState(false);
-
-  // ── Re-assign state (Assigned tab) ──────────────────────────────────────
-  const [reAssignDialog, setReAssignDialog] = useState(false);
-  const [reAssignLead, setReAssignLead] = useState<Lead | null>(null);
-  const [reAssignAgentId, setReAssignAgentId] = useState("");
-  const [reAssignLoading, setReAssignLoading] = useState(false);
 
   const { showToast, ToastComponent } = useToast();
 
@@ -165,7 +163,7 @@ export default function ManagerLeadsPage() {
   );
   const displayedLeads = activeTab === "POOL" ? poolLeads : assignedLeads;
 
-  // ── Select-all derived state ─────────────────────────────────────────────
+  // ─── Select-All derived state ───────────────────────────────────────────────
   const allPoolIds = poolLeads.map((l) => l.id);
   const isAllSelected =
     allPoolIds.length > 0 &&
@@ -190,16 +188,20 @@ export default function ManagerLeadsPage() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
+  // ─── Enter selection mode from a single row's Distribute button ─────────────
+  // Pre-selects that one lead and reveals checkboxes for all rows.
   const enterSelectionMode = (leadId: string) => {
     setSelectedLeadIds([leadId]);
     setSelectionMode(true);
   };
 
+  // ─── Cancel selection mode ──────────────────────────────────────────────────
   const cancelSelectionMode = () => {
     setSelectionMode(false);
     setSelectedLeadIds([]);
   };
 
+  // ─── Open distribution dialog ───────────────────────────────────────────────
   const openDistDialog = () => {
     if (selectedLeadIds.length === 0) {
       showToast("Select at least one lead from the pool", "destructive");
@@ -208,7 +210,6 @@ export default function ManagerLeadsPage() {
     setDistDialog(true);
   };
 
-  // ── Pool → Agent distribute ──────────────────────────────────────────────
   const distribute = async () => {
     if (distMode === "MANUAL" && !distAgentId) {
       showToast("Select an agent for manual distribution", "destructive");
@@ -239,48 +240,6 @@ export default function ManagerLeadsPage() {
     }
   };
 
-  // ── Open re-assign dialog for a specific assigned lead ───────────────────
-  const openReAssignDialog = (lead: Lead) => {
-    setReAssignLead(lead);
-    setReAssignAgentId(lead.assignedToUserId ?? "");
-    setReAssignDialog(true);
-  };
-
-  // ── Submit re-assign ─────────────────────────────────────────────────────
-  const submitReAssign = async () => {
-    if (!reAssignLead) return;
-    if (!reAssignAgentId) {
-      showToast("Select an agent to re-assign this lead", "destructive");
-      return;
-    }
-    if (reAssignAgentId === reAssignLead.assignedToUserId) {
-      showToast("Lead is already assigned to this agent", "destructive");
-      return;
-    }
-    setReAssignLoading(true);
-    try {
-      await api.patch("/leads/reassign", {
-        leadId: reAssignLead.id,
-        agentId: reAssignAgentId,
-      });
-      showToast("Lead re-assigned successfully", "success");
-      setReAssignDialog(false);
-      setReAssignLead(null);
-      setReAssignAgentId("");
-      fetchData();
-    } catch (err: any) {
-      showToast(
-        err?.response?.data?.message ?? "Re-assign failed",
-        "destructive",
-      );
-    } finally {
-      setReAssignLoading(false);
-    }
-  };
-
-  // ── Active agents only (for re-assign dropdown) ──────────────────────────
-  const activeAgents = agents.filter((a) => a.isActive);
-
   return (
     <div className="p-6 space-y-6">
       {ToastComponent}
@@ -294,6 +253,7 @@ export default function ManagerLeadsPage() {
           </p>
         </div>
 
+        {/* When in selection mode, show Assign + Cancel in the header */}
         {selectionMode && activeTab === "POOL" && (
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={cancelSelectionMode}>
@@ -327,7 +287,7 @@ export default function ManagerLeadsPage() {
         ))}
       </div>
 
-      {/* Agent workload */}
+      {/* Agents load overview */}
       {agents.length > 0 && (
         <div className="border rounded-lg p-4 space-y-2">
           <p className="text-sm font-medium">Agent Workload</p>
@@ -377,6 +337,7 @@ export default function ManagerLeadsPage() {
             key={tab.key}
             onClick={() => {
               setActiveTab(tab.key);
+              // Leaving POOL tab cancels selection mode
               if (tab.key !== "POOL") cancelSelectionMode();
               else setSelectedLeadIds([]);
             }}
@@ -391,13 +352,13 @@ export default function ManagerLeadsPage() {
         ))}
       </div>
 
-      {/* Selection-mode banner (Pool tab only) */}
+      {/* Selection-mode info banner */}
       {activeTab === "POOL" && selectionMode && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
           <p className="text-sm text-blue-800">
             <strong>{selectedLeadIds.length}</strong> lead(s) selected — use the{" "}
-            <strong>select-all checkbox</strong> to pick every lead at once, or
-            tick individual rows.
+            <strong>select-all checkbox</strong> in the header to pick every
+            lead at once, or tick individual rows.
           </p>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={cancelSelectionMode}>
@@ -421,16 +382,19 @@ export default function ManagerLeadsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              {/* Checkbox column — always present in POOL tab.
+                  In normal mode: empty cell (placeholder for alignment).
+                  In selection mode: shows the select-all checkbox. */}
               {activeTab === "POOL" && (
                 <TableHead className="w-10">
                   {selectionMode && poolLeads.length > 0 && (
                     <>
-                      <span>select all </span>
-                      <SelectAllCheckbox
-                        checked={isAllSelected}
-                        indeterminate={isSomeSelected}
-                        onChange={handleSelectAll}
-                      />
+                    <span>select all </span>
+                    <SelectAllCheckbox
+                      checked={isAllSelected}
+                      indeterminate={isSomeSelected}
+                      onChange={handleSelectAll}
+                    />
                     </>
                   )}
                 </TableHead>
@@ -440,14 +404,15 @@ export default function ManagerLeadsPage() {
               <TableHead>Priority</TableHead>
               <TableHead>Stage</TableHead>
               <TableHead>Assigned Agent</TableHead>
-              <TableHead>Action</TableHead>
+              {/* Action column — only in POOL tab */}
+              {activeTab === "POOL" && <TableHead>Action</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {displayedLeads.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={activeTab === "POOL" ? 7 : 6}
+                  colSpan={activeTab === "POOL" ? 7 : 5}
                   className="text-center py-8 text-muted-foreground"
                 >
                   {activeTab === "POOL"
@@ -463,7 +428,9 @@ export default function ManagerLeadsPage() {
                     selectedLeadIds.includes(lead.id) ? "bg-blue-50" : ""
                   }
                 >
-                  {/* Checkbox cell — pool tab only */}
+                  {/* Checkbox cell — always present in POOL tab to keep column count stable.
+                      In normal mode: empty cell.
+                      In selection mode: shows the per-row checkbox. */}
                   {activeTab === "POOL" && (
                     <TableCell className="w-10">
                       {selectionMode && (
@@ -494,27 +461,22 @@ export default function ManagerLeadsPage() {
                     )}
                   </TableCell>
 
-                  <TableCell>
-                    {activeTab === "POOL" && !selectionMode && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => enterSelectionMode(lead.id)}
-                      >
-                        Distribute
-                      </Button>
-                    )}
-
-                    {activeTab === "ASSIGNED" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openReAssignDialog(lead)}
-                      >
-                        Re-assign
-                      </Button>
-                    )}
-                  </TableCell>
+                  {/* Action cell — always present in POOL tab.
+                      Normal mode  → "Distribute" button.
+                      Selection mode → empty cell (actions moved to banner/header). */}
+                  {activeTab === "POOL" && (
+                    <TableCell>
+                      {!selectionMode && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => enterSelectionMode(lead.id)}
+                        >
+                          Distribute
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
@@ -522,7 +484,7 @@ export default function ManagerLeadsPage() {
         </Table>
       )}
 
-      {/* ── Assign to Agent Dialog (Pool → Agent) ─────────────────────────── */}
+      {/* Assign to Agent Dialog */}
       <Dialog open={distDialog} onOpenChange={setDistDialog}>
         <DialogContent>
           <DialogHeader>
@@ -581,111 +543,6 @@ export default function ManagerLeadsPage() {
             </Button>
             <Button onClick={distribute} disabled={distLoading}>
               {distLoading ? "Assigning…" : "Assign"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Re-assign Dialog (Assigned → different Agent) ─────────────────── */}
-      <Dialog
-        open={reAssignDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setReAssignDialog(false);
-            setReAssignLead(null);
-            setReAssignAgentId("");
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Re-assign Lead</DialogTitle>
-            <DialogDescription>
-              {reAssignLead && (
-                <>
-                  Reassigning <strong>{reAssignLead.name}</strong> — currently
-                  assigned to{" "}
-                  <strong>
-                    {reAssignLead.assignedToUser?.email.split("@")[0] ?? "—"}
-                  </strong>
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Current assignment info */}
-            {reAssignLead?.assignedToUser && (
-              <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm space-y-1">
-                <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                  Currently Assigned
-                </p>
-                <p className="font-semibold">
-                  {reAssignLead.assignedToUser.email.split("@")[0]}
-                </p>
-                <p className="text-muted-foreground">
-                  {reAssignLead.assignedToUser.designation}
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium">
-                Select New Agent
-                <span className="text-muted-foreground font-normal ml-1">
-                  (your team only)
-                </span>
-              </label>
-              <Select
-                value={reAssignAgentId}
-                onValueChange={setReAssignAgentId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose an agent…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeAgents.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                      No active agents in your team
-                    </div>
-                  ) : (
-                    activeAgents.map((a) => {
-                      const load = a._count?.assignedLeads ?? 0;
-                      const limit = a.activeTicketLimit ?? 1;
-                      const isCurrent = a.id === reAssignLead?.assignedToUserId;
-                      return (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.email.split("@")[0]}
-                          {isCurrent && " (current)"} — {load}/{limit} leads
-                        </SelectItem>
-                      );
-                    })
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setReAssignDialog(false);
-                setReAssignLead(null);
-                setReAssignAgentId("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={submitReAssign}
-              disabled={
-                reAssignLoading ||
-                !reAssignAgentId ||
-                reAssignAgentId === reAssignLead?.assignedToUserId
-              }
-            >
-              {reAssignLoading ? "Saving…" : "Re-assign"}
             </Button>
           </DialogFooter>
         </DialogContent>
