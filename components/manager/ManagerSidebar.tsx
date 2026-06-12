@@ -21,6 +21,13 @@ export default function ManagerSidebar() {
           <span>Dashboard</span>
         </Link>
         <Link
+          href="/manager/add-team"
+          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800"
+        >
+          <LayoutDashboard size={18} />
+          <span>Add Team</span>
+        </Link>
+        <Link
           href="/manager/leads"
           className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800"
         >

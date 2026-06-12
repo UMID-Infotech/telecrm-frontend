@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronUp, Filter as FilterIcon, X } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Lead {
@@ -74,82 +74,161 @@ const getField = (lead: Lead, ...keys: string[]) => {
   return undefined;
 };
 
-const buildDetailRows = (lead: Lead) => [
-  { label: "Name", value: lead?.name },
-  { label: "Phone", value: lead?.phone },
-  { label: "Email", value: getField(lead, "email", "Contact Email") },
-  { label: "City / State", value: getField(lead, "city", "City / Location") },
+// Detail columns shown inline in the table (used both for table columns and filters)
+type DetailCol = {
+  key: string;
+  label: string;
+  get: (lead: Lead) => string | undefined;
+};
+
+const DETAIL_COLUMNS: DetailCol[] = [
+  { key: "name", label: "Name", get: (l) => l?.name },
+  { key: "phone", label: "Phone", get: (l) => l?.phone },
   {
+    key: "email",
+    label: "Email",
+    get: (l) => getField(l, "email", "Contact Email") as string | undefined,
+  },
+  {
+    key: "city",
+    label: "City / State",
+    get: (l) => getField(l, "city", "City / Location") as string | undefined,
+  },
+  {
+    key: "businessName",
     label: "Business Name",
-    value: getField(lead, "businessName", "Business Name"),
+    get: (l) =>
+      getField(l, "businessName", "Business Name") as string | undefined,
   },
   {
+    key: "industry",
     label: "Industry / Sector",
-    value: getField(lead, "industry", "Industry / Sector"),
+    get: (l) =>
+      getField(l, "industry", "Industry / Sector") as string | undefined,
   },
   {
+    key: "websiteAvailable",
     label: "Website (Y/N)",
-    value: getField(lead, "websiteAvailable", "Website (Y/N)"),
+    get: (l) =>
+      getField(l, "websiteAvailable", "Website (Y/N)") as string | undefined,
   },
   {
+    key: "websiteLink",
     label: "Website Link",
-    value: getField(lead, "websiteLink", "Website Link"),
+    get: (l) =>
+      getField(l, "websiteLink", "Website Link") as string | undefined,
   },
   {
+    key: "socialMedia",
     label: "Social Media",
-    value: getField(lead, "socialMedia", "Social Media"),
+    get: (l) =>
+      getField(l, "socialMedia", "Social Media") as string | undefined,
   },
   {
+    key: "qualityOfOnlinePresence",
     label: "Quality of Online Presence",
-    value: getField(
-      lead,
-      "qualityOfOnlinePresence",
-      "Quality of Online Presence",
-    ),
+    get: (l) =>
+      getField(l, "qualityOfOnlinePresence", "Quality of Online Presence") as
+        | string
+        | undefined,
   },
   {
+    key: "contactNumber",
     label: "Contact Number",
-    value: getField(lead, "contactNumber", "Contact Number"),
+    get: (l) =>
+      getField(l, "contactNumber", "Contact Number") as string | undefined,
   },
   {
+    key: "profileLink",
     label: "Profile Link",
-    value: getField(
-      lead,
-      "profileLink",
-      "Profile Link (Link of Social Media Page)",
-    ),
+    get: (l) =>
+      getField(l, "profileLink", "Profile Link (Link of Social Media Page)") as
+        | string
+        | undefined,
   },
   {
+    key: "contactEmail",
     label: "Contact Email",
-    value: getField(lead, "contactEmail", "Contact Email"),
+    get: (l) =>
+      getField(l, "contactEmail", "Contact Email") as string | undefined,
   },
   {
+    key: "needIdentified",
     label: "Need Identified",
-    value: getField(lead, "needIdentified", "Need Identified"),
+    get: (l) =>
+      getField(l, "needIdentified", "Need Identified") as string | undefined,
   },
   {
+    key: "sourceOfLead",
     label: "Source of Lead",
-    value: getField(lead, "sourceOfLead", "Source of Lead"),
+    get: (l) =>
+      getField(l, "sourceOfLead", "Source of Lead") as string | undefined,
   },
   {
+    key: "priorityLevel",
     label: "Priority Level",
-    value: getField(lead, "priorityLevel", "Priority Level"),
+    get: (l) =>
+      getField(l, "priorityLevel", "Priority Level") as string | undefined,
   },
   {
+    key: "outreachStatus",
     label: "Outreach Status",
-    value: getField(lead, "outreachStatus", "Outreach Status"),
+    get: (l) =>
+      getField(l, "outreachStatus", "Outreach Status") as string | undefined,
   },
   {
+    key: "nextFollowUpDate",
     label: "Next Follow-Up Date",
-    value: getField(lead, "nextFollowUpDate", "Next Follow-Up Date"),
+    get: (l) =>
+      getField(l, "nextFollowUpDate", "Next Follow-Up Date") as
+        | string
+        | undefined,
   },
-  { label: "Notes", value: getField(lead, "notes", "Notes") },
   {
-    label: "Additional Comments",
-    value: getField(lead, "additionalComments", "Additional Comments"),
+    key: "notes",
+    label: "Notes",
+    get: (l) => getField(l, "notes", "Notes") as string | undefined,
   },
-  { label: "Source Link", value: getField(lead, "sourceLink", "Source Link") },
-  { label: "Created", value: formatDateTime(lead?.createdAt) },
+  {
+    key: "additionalComments",
+    label: "Additional Comments",
+    get: (l) =>
+      getField(l, "additionalComments", "Additional Comments") as
+        | string
+        | undefined,
+  },
+  {
+    key: "sourceLink",
+    label: "Source Link",
+    get: (l) => getField(l, "sourceLink", "Source Link") as string | undefined,
+  },
+  { key: "priority", label: "Priority", get: (l) => l?.priority },
+  {
+    key: "approvalStatus",
+    label: "Approval Status",
+    get: (l) => l?.approvalStatus,
+  },
+  {
+    key: "distributionStage",
+    label: "Stage",
+    get: (l) => l?.distributionStage ?? undefined,
+  },
+  {
+    key: "createdBy",
+    label: "Created By",
+    get: (l) => l?.createdByUser?.email,
+  },
+  {
+    key: "createdByRole",
+    label: "Created By Role",
+    get: (l) => l?.createdByRole,
+  },
+  { key: "team", label: "Team", get: (l) => l?.team?.name },
+  {
+    key: "createdAt",
+    label: "Created",
+    get: (l) => (l?.createdAt ? formatDateTime(l.createdAt) : undefined),
+  },
 ];
 
 // ─── Badges ──────────────────────────────────────────────────────────────────
@@ -178,7 +257,7 @@ const stageBadge = (stage: Lead["distributionStage"]) => {
     AGENT_OWNED: "Assigned",
   };
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${map[stage]}`}>
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${map[stage]}`}>
       {labels[stage]}
     </span>
   );
@@ -191,13 +270,103 @@ const priorityBadge = (p: Lead["priority"]) => {
     LOW: "bg-gray-100 text-gray-600",
   };
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${map[p]}`}>
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${map[p]}`}>
       {p}
     </span>
   );
 };
 
+const renderCell = (lead: Lead, key: string) => {
+  switch (key) {
+    case "priority":
+      return priorityBadge(lead.priority);
+    case "approvalStatus":
+      return approvalBadge(lead.approvalStatus);
+    case "distributionStage":
+      return stageBadge(lead.distributionStage);
+    case "createdBy":
+      return lead.createdByUser?.email ?? "—";
+    default: {
+      const col = DETAIL_COLUMNS.find((c) => c.key === key);
+      const v = col?.get(lead);
+      return v !== undefined && v !== null && v !== "" ? String(v) : "—";
+    }
+  }
+};
+
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+// ─── Per-column filter combobox ───────────────────────────────────────────────
+function ColumnFilter({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const filtered = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return options.slice(0, 50);
+    return options.filter((o) => o.toLowerCase().includes(q)).slice(0, 50);
+  }, [value, options]);
+
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">
+        {label}
+      </label>
+      <div className="relative">
+        <Input
+          value={value}
+          placeholder={`Filter ${label.toLowerCase()}…`}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          className="pr-7"
+        />
+        {value && (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onChange("");
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Clear"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {open && filtered.length > 0 && (
+          <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border bg-popover shadow-md">
+            {filtered.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(opt);
+                  setOpen(false);
+                }}
+                className="block w-full text-left px-3 py-1.5 text-sm hover:bg-accent"
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminLeadsPage() {
@@ -208,27 +377,16 @@ export default function AdminLeadsPage() {
     "ALL",
   );
 
-  // Filters
-  const [search, setSearch] = useState("");
-  const [cityFilter, setCityFilter] = useState<string>("ALL");
-  const [industryFilter, setIndustryFilter] = useState<string>("ALL");
-  const [socialFilter, setSocialFilter] = useState<string>("ALL");
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filterOpen, setFilterOpen] = useState(false);
 
-  // Pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  // Expanded rows
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  // Dialogs
   const [rejectDialog, setRejectDialog] = useState<{
     open: boolean;
     leadId: string;
-  }>({
-    open: false,
-    leadId: "",
-  });
+  }>({ open: false, leadId: "" });
   const [rejectReason, setRejectReason] = useState("");
 
   const [distDialog, setDistDialog] = useState(false);
@@ -253,32 +411,28 @@ export default function AdminLeadsPage() {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // ── Filter option lists (unique values) ─────────────────────────────────
-  const uniq = (vals: (string | undefined)[]) =>
-    Array.from(
-      new Set(vals.filter((v): v is string => !!v && v.trim() !== "")),
-    ).sort();
+  const optionsByKey = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const col of DETAIL_COLUMNS) {
+      const set = new Set<string>();
+      for (const l of leads) {
+        const v = col.get(l);
+        if (v !== undefined && v !== null && String(v).trim() !== "") {
+          set.add(String(v));
+        }
+      }
+      map[col.key] = Array.from(set).sort();
+    }
+    return map;
+  }, [leads]);
 
-  const cityOptions = useMemo(
-    () => uniq(leads.map((l) => getField(l, "city", "City / Location"))),
-    [leads],
-  );
-  const industryOptions = useMemo(
-    () => uniq(leads.map((l) => getField(l, "industry", "Industry / Sector"))),
-    [leads],
-  );
-  const socialOptions = useMemo(
-    () => uniq(leads.map((l) => getField(l, "socialMedia", "Social Media"))),
-    [leads],
-  );
-
-  // ── Apply tab + filters ─────────────────────────────────────────────────
   const filteredLeads = useMemo(() => {
     return leads.filter((l) => {
       if (activeTab === "PENDING" && l.approvalStatus !== "PENDING")
@@ -286,42 +440,26 @@ export default function AdminLeadsPage() {
       if (activeTab === "L1_POOL" && l.distributionStage !== "L1_POOL")
         return false;
 
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const hay = [l.name, l.phone, l.createdByUser?.email, l.team?.name]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-
-      if (cityFilter !== "ALL") {
-        const v = getField(l, "city", "City / Location");
-        if (v !== cityFilter) return false;
-      }
-      if (industryFilter !== "ALL") {
-        const v = getField(l, "industry", "Industry / Sector");
-        if (v !== industryFilter) return false;
-      }
-      if (socialFilter !== "ALL") {
-        const v = getField(l, "socialMedia", "Social Media");
-        if (v !== socialFilter) return false;
+      for (const col of DETAIL_COLUMNS) {
+        const q = (filters[col.key] ?? "").trim().toLowerCase();
+        if (!q) continue;
+        const v = col.get(l);
+        if (v === undefined || v === null) return false;
+        if (!String(v).toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [leads, activeTab, search, cityFilter, industryFilter, socialFilter]);
+  }, [leads, activeTab, filters]);
 
-  // Reset to page 1 when filters/tab change
   useEffect(() => {
     setPage(1);
-  }, [activeTab, search, cityFilter, industryFilter, socialFilter, pageSize]);
+  }, [activeTab, filters, pageSize]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pageStart = (currentPage - 1) * pageSize;
   const displayedLeads = filteredLeads.slice(pageStart, pageStart + pageSize);
 
-  // ── Select All logic for L1_POOL ─────────────────────────────────────────
   const selectableLeadIds = useMemo(
     () =>
       displayedLeads
@@ -333,29 +471,27 @@ export default function AdminLeadsPage() {
   const allSelected =
     selectableLeadIds.length > 0 &&
     selectableLeadIds.every((id) => selectedLeadIds.includes(id));
-
   const someSelected =
     !allSelected &&
     selectableLeadIds.some((id) => selectedLeadIds.includes(id));
 
   const toggleSelectAll = () => {
     if (allSelected) {
-      // Deselect all selectable leads on this page
       setSelectedLeadIds((prev) =>
         prev.filter((id) => !selectableLeadIds.includes(id)),
       );
     } else {
-      // Select all selectable leads on this page
       setSelectedLeadIds((prev) =>
         Array.from(new Set([...prev, ...selectableLeadIds])),
       );
     }
   };
 
-  const toggleExpand = (id: string) =>
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleLeadSelect = (id: string) =>
+    setSelectedLeadIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
 
-  // ── Approve ───────────────────────────────────────────────────────────────
   const approveLead = async (leadId: string) => {
     try {
       await api.patch(`/leads/${leadId}/approve`, { status: "APPROVED" });
@@ -381,11 +517,6 @@ export default function AdminLeadsPage() {
     }
   };
 
-  const toggleLeadSelect = (id: string) =>
-    setSelectedLeadIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-
   const openDistDialog = () => {
     if (selectedLeadIds.length === 0) {
       showToast(
@@ -406,7 +537,6 @@ export default function AdminLeadsPage() {
     try {
       const payload: any = { leadIds: selectedLeadIds, mode: distMode };
       if (distMode === "MANUAL") payload.teamId = distTeamId;
-
       await api.post("/leads/distribute/team", payload);
       showToast(
         `${selectedLeadIds.length} lead(s) distributed to team`,
@@ -428,35 +558,57 @@ export default function AdminLeadsPage() {
 
   const l1PoolLeads = leads.filter((l) => l.distributionStage === "L1_POOL");
 
-  const resetFilters = () => {
-    setSearch("");
-    setCityFilter("ALL");
-    setIndustryFilter("ALL");
-    setSocialFilter("ALL");
-  };
+  const activeFilterCount = Object.values(filters).filter(
+    (v) => v && v.trim() !== "",
+  ).length;
+  const resetFilters = () => setFilters({});
 
-  const visibleColCount = (activeTab === "L1_POOL" ? 1 : 0) + 9;
+  const canDistributeRow = (l: Lead) => l.distributionStage === "L1_POOL";
+
+  const totalCols =
+    (activeTab === "L1_POOL" ? 1 : 0) + DETAIL_COLUMNS.length + 1;
 
   return (
-    <div className="p-6 space-y-6">
+    // ↓ overflow-x-hidden on the page root prevents any accidental page-level scroll
+    <div className="p-3 sm:p-6 space-y-4 overflow-x-hidden w-full">
       {ToastComponent}
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Leads Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Leads Management</h1>
           <p className="text-sm text-muted-foreground">
             Approve leads and distribute them to teams (L1 → L2 pipeline)
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
+            size="sm"
             onClick={() => (window.location.href = "/admin/leads/create")}
           >
             + New Lead
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFilterOpen((o) => !o)}
+            aria-expanded={filterOpen}
+          >
+            <FilterIcon className="h-4 w-4 mr-1" />
+            Filter
+            {activeFilterCount > 0 && (
+              <span className="ml-1 rounded-full bg-primary text-primary-foreground text-xs px-1.5 py-0.5">
+                {activeFilterCount}
+              </span>
+            )}
+            {filterOpen ? (
+              <ChevronUp className="h-4 w-4 ml-1" />
+            ) : (
+              <ChevronDown className="h-4 w-4 ml-1" />
+            )}
+          </Button>
           {selectedLeadIds.length > 0 && (
-            <Button variant="secondary" onClick={openDistDialog}>
+            <Button size="sm" onClick={openDistDialog}>
               Distribute ({selectedLeadIds.length})
             </Button>
           )}
@@ -464,7 +616,7 @@ export default function AdminLeadsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {[
           { label: "Total", count: leads.length, cls: "bg-slate-50" },
           {
@@ -487,114 +639,77 @@ export default function AdminLeadsPage() {
             cls: "bg-green-50",
           },
         ].map((s) => (
-          <div key={s.label} className={`${s.cls} rounded-lg p-4 border`}>
-            <p className="text-2xl font-bold">{s.count}</p>
-            <p className="text-xs text-muted-foreground">{s.label}</p>
+          <div key={s.label} className={`rounded-lg p-3 ${s.cls}`}>
+            <div className="text-xl sm:text-2xl font-bold">{s.count}</div>
+            <div className="text-xs text-muted-foreground">{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="border-b flex gap-2">
-        {(["ALL", "PENDING", "L1_POOL"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? "border-b-2 border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab === "ALL"
-              ? "All Leads"
-              : tab === "PENDING"
-                ? "Needs Approval"
-                : "L1 Pool (Distributable)"}
-          </button>
-        ))}
+      {/* Tabs — horizontally scrollable on mobile so they don't wrap awkwardly */}
+      <div className="border-b overflow-x-auto">
+        <div className="flex min-w-max">
+          {(["ALL", "PENDING", "L1_POOL"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab === "ALL"
+                ? "All Leads"
+                : tab === "PENDING"
+                  ? "Needs Approval"
+                  : "L1 Pool (Distributable)"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-        <div className="md:col-span-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Search
-          </label>
-          <Input
-            placeholder="Name, phone, email…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* Filter accordion */}
+      {filterOpen && (
+        <div className="rounded-lg border bg-card p-3 sm:p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold">Filter by any column</div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={resetFilters}>
+                Reset
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilterOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {DETAIL_COLUMNS.map((col) => (
+              <ColumnFilter
+                key={col.key}
+                label={col.label}
+                value={filters[col.key] ?? ""}
+                options={optionsByKey[col.key] ?? []}
+                onChange={(v) =>
+                  setFilters((prev) => ({ ...prev, [col.key]: v }))
+                }
+              />
+            ))}
+          </div>
         </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">
-            City / Location
-          </label>
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All cities</SelectItem>
-              {cityOptions.map((v) => (
-                <SelectItem key={v} value={v}>
-                  {v}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">
-            Industry / Sector
-          </label>
-          <Select value={industryFilter} onValueChange={setIndustryFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All industries</SelectItem>
-              {industryOptions.map((v) => (
-                <SelectItem key={v} value={v}>
-                  {v}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">
-            Social Media
-          </label>
-          <Select value={socialFilter} onValueChange={setSocialFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All platforms</SelectItem>
-              {socialOptions.map((v) => (
-                <SelectItem key={v} value={v}>
-                  {v}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Button variant="outline" className="w-full" onClick={resetFilters}>
-            Reset filters
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Distribute banner */}
       {activeTab === "L1_POOL" && l1PoolLeads.length > 0 && (
-        <div className="flex items-center justify-between rounded-md border bg-blue-50 px-4 py-2">
-          <p className="text-sm text-blue-900">
-            ✓ Select leads below and click <strong>Distribute</strong> to assign
-            them to teams
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-blue-50 px-3 py-2">
+          <div className="text-sm text-blue-900">
+            ✓ Select leads below and click <b>Distribute</b> to assign them to
+            teams
+          </div>
           {selectedLeadIds.length > 0 && (
             <Button size="sm" onClick={openDistDialog}>
               Distribute Selected ({selectedLeadIds.length})
@@ -603,19 +718,33 @@ export default function AdminLeadsPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Table card — full width; scroll is confined inside this card */}
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">
           Loading leads…
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10"></TableHead>
+        <div className="rounded-lg border bg-card w-full">
+          {/*
+            ── KEY FIX ──────────────────────────────────────────────────────────
+            The overflow-x-auto is scoped to this inner div only.
+            The outer card and the rest of the page are NOT inside this div,
+            so they never contribute to horizontal scrolling.
+            ─────────────────────────────────────────────────────────────────────
+          */}
+          <div className="overflow-hidden">
+            {/* Header */}
+            <div className="border-b bg-muted/30">
+              <div
+                className="grid min-w-max"
+                style={{
+                  gridTemplateColumns: `${
+                    activeTab === "L1_POOL" ? "50px " : ""
+                  }repeat(${DETAIL_COLUMNS.length}, minmax(180px, 180px)) 140px`,
+                }}
+              >
                 {activeTab === "L1_POOL" && (
-                  <TableHead className="w-10">
+                  <div className="p-3 border-r flex items-center">
                     <input
                       type="checkbox"
                       checked={allSelected}
@@ -623,187 +752,97 @@ export default function AdminLeadsPage() {
                         if (el) el.indeterminate = someSelected;
                       }}
                       onChange={toggleSelectAll}
-                      aria-label="Select all leads on this page"
-                      title="Select all"
-                      className="cursor-pointer"
                     />
-                  </TableHead>
+                  </div>
                 )}
-                <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Created By</TableHead>
-                <TableHead>Team</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayedLeads.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={visibleColCount + 1}
-                    className="text-center py-8 text-muted-foreground"
+
+                {DETAIL_COLUMNS.map((col) => (
+                  <div
+                    key={col.key}
+                    className="p-3 text-sm font-semibold border-r whitespace-nowrap"
                   >
-                    No leads found
-                  </TableCell>
-                </TableRow>
+                    {col.label}
+                  </div>
+                ))}
+
+                <div className="p-3 text-sm font-semibold whitespace-nowrap">
+                  Actions
+                </div>
+              </div>
+            </div>
+
+            {/* Rows */}
+            <div className="divide-y">
+              {displayedLeads.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground">
+                  No leads found
+                </div>
               ) : (
-                displayedLeads.map((lead) => {
-                  const isOpen = !!expanded[lead.id];
-                  const details = buildDetailRows(lead);
-                  return (
-                    // ✅ Fix: use Fragment with key instead of bare <>
-                    <Fragment key={lead.id}>
-                      <TableRow>
-                        <TableCell>
-                          <button
-                            onClick={() => toggleExpand(lead.id)}
-                            className="p-1 rounded hover:bg-muted"
-                            aria-label="Toggle details"
-                          >
-                            {isOpen ? (
-                              <ChevronDown className="w-4 h-4" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4" />
-                            )}
-                          </button>
-                        </TableCell>
-                        {activeTab === "L1_POOL" && (
-                          <TableCell>
-                            {lead.distributionStage === "L1_POOL" && (
-                              <input
-                                type="checkbox"
-                                checked={selectedLeadIds.includes(lead.id)}
-                                onChange={() => toggleLeadSelect(lead.id)}
-                                className="cursor-pointer"
-                              />
-                            )}
-                          </TableCell>
-                        )}
-                        <TableCell className="font-medium">
-                          {lead.name}
-                        </TableCell>
-                        <TableCell>{lead.phone}</TableCell>
-                        <TableCell>{priorityBadge(lead.priority)}</TableCell>
-                        <TableCell>
-                          {approvalBadge(lead.approvalStatus)}
-                        </TableCell>
-                        <TableCell>
-                          {stageBadge(lead.distributionStage)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {lead.createdByUser?.email?.split("@")[0]} (
-                          {lead.createdByRole})
-                        </TableCell>
-                        <TableCell>
-                          {lead.team?.name ?? (
-                            <span className="text-muted-foreground">—</span>
+                displayedLeads.map((lead) => (
+                  <div key={lead.id} className="overflow-x-auto">
+                    <div
+                      className="grid min-w-max"
+                      style={{
+                        gridTemplateColumns: `${
+                          activeTab === "L1_POOL" ? "50px " : ""
+                        }repeat(${DETAIL_COLUMNS.length}, minmax(180px, 180px)) 140px`,
+                      }}
+                    >
+                      {activeTab === "L1_POOL" && (
+                        <div className="p-3 border-r flex items-center">
+                          {lead.distributionStage === "L1_POOL" && (
+                            <input
+                              type="checkbox"
+                              checked={selectedLeadIds.includes(lead.id)}
+                              onChange={() => toggleLeadSelect(lead.id)}
+                            />
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2 justify-end flex-wrap">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => toggleExpand(lead.id)}
-                            >
-                              {isOpen ? "Hide" : "View"} Details
-                            </Button>
-                            {lead.approvalStatus === "PENDING" && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  onClick={() => approveLead(lead.id)}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() =>
-                                    setRejectDialog({
-                                      open: true,
-                                      leadId: lead.id,
-                                    })
-                                  }
-                                >
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                            {lead.distributionStage === "L1_POOL" &&
-                              activeTab !== "L1_POOL" && (
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => {
-                                    setSelectedLeadIds([lead.id]);
-                                    setActiveTab("L1_POOL");
-                                  }}
-                                >
-                                  Distribute
-                                </Button>
-                              )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-
-                      {isOpen && (
-                        <TableRow className="bg-muted/30">
-                          <TableCell
-                            colSpan={visibleColCount + 1}
-                            className="p-0"
-                          >
-                            <div className="p-5">
-                              <h4 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-                                Full Lead Details
-                              </h4>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
-                                {details.map((row) => (
-                                  <div
-                                    key={row.label}
-                                    className="flex flex-col"
-                                  >
-                                    <span className="text-xs font-medium text-muted-foreground">
-                                      {row.label}
-                                    </span>
-                                    <span className="text-sm break-words">
-                                      {row.value !== undefined &&
-                                      row.value !== null &&
-                                      row.value !== ""
-                                        ? String(row.value)
-                                        : "—"}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        </div>
                       )}
-                    </Fragment>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20 flex-wrap gap-3">
+                      {DETAIL_COLUMNS.map((col) => (
+                        <div
+                          key={col.key}
+                          className="p-3 border-r whitespace-nowrap text-sm"
+                        >
+                          {renderCell(lead, col.key)}
+                        </div>
+                      ))}
+
+                      <div className="p-3">
+                        <Button
+                          size="sm"
+                          disabled={!canDistributeRow(lead)}
+                          onClick={() => {
+                            setSelectedLeadIds([lead.id]);
+                            setActiveTab("L1_POOL");
+                            setDistDialog(true);
+                          }}
+                        >
+                          Distribute
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Pagination — outside the scroll div, always full width */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 border-t">
             <div className="text-sm text-muted-foreground">
               Showing{" "}
-              <strong>
+              <b>
                 {filteredLeads.length === 0 ? 0 : pageStart + 1}–
                 {Math.min(pageStart + pageSize, filteredLeads.length)}
-              </strong>{" "}
-              of <strong>{filteredLeads.length}</strong>
+              </b>{" "}
+              of {filteredLeads.length}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-sm text-muted-foreground">
                 Rows per page
-              </span>
+              </label>
               <Select
                 value={String(pageSize)}
                 onValueChange={(v) => setPageSize(Number(v))}
@@ -825,7 +864,7 @@ export default function AdminLeadsPage() {
                 disabled={currentPage <= 1}
                 onClick={() => setPage(1)}
               >
-                « First
+                «
               </Button>
               <Button
                 variant="outline"
@@ -835,8 +874,8 @@ export default function AdminLeadsPage() {
               >
                 ‹ Prev
               </Button>
-              <span className="text-sm px-2">
-                Page <strong>{currentPage}</strong> / {totalPages}
+              <span className="text-sm whitespace-nowrap">
+                Page {currentPage} / {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -852,7 +891,7 @@ export default function AdminLeadsPage() {
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage(totalPages)}
               >
-                Last »
+                »
               </Button>
             </div>
           </div>
@@ -874,9 +913,9 @@ export default function AdminLeadsPage() {
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="Reason for rejection…"
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Reason…"
           />
           <DialogFooter>
             <Button
