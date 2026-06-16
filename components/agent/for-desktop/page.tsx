@@ -802,7 +802,7 @@ export default function AgentLeadDetailPage() {
                     {/* <span className="font-mono">{lead.phone}</span> */}
                     <span className="text-slate-300 mx-1.5">·</span>
                     <span className="text-slate-400 font-sans">
-                      {lead.data?.email || lead.data?.["Contact Email"] }
+                      {lead.data?.email || lead.data?.["Contact Email"]}
                     </span>
                     <span className="text-slate-400 font-sans">
                       {lead.data?.["Industry / Sector"]}
@@ -1123,19 +1123,44 @@ export default function AgentLeadDetailPage() {
                           label: "Created",
                           value: formatDateTime(lead?.createdAt),
                         },
-                      ].map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="border-b border-slate-50 pb-2 space-y-0.5 last:border-0 last:pb-0"
-                        >
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                            {item.label}
-                          </span>
-                          <p className="text-sm font-semibold text-slate-800 break-words">
-                            {item.value}
-                          </p>
-                        </div>
-                      ))
+                      ].map((item, idx) => {
+                        const isLinkField =
+                          item.label === "Website Link" ||
+                          item.label === "Source Link";
+
+                        const href =
+                          item.value && /^https?:\/\//i.test(item.value)
+                            ? item.value
+                            : item.value
+                              ? `https://${item.value}`
+                              : "";
+
+                        return (
+                          <div
+                            key={idx}
+                            className="border-b border-slate-50 pb-2 space-y-0.5 last:border-0 last:pb-0"
+                          >
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              {item.label}
+                            </span>
+
+                            {isLinkField && item.value ? (
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-semibold text-blue-600 hover:text-blue-800 underline break-all"
+                              >
+                                {item.value}
+                              </a>
+                            ) : (
+                              <p className="text-sm font-semibold text-slate-800 break-words">
+                                {item.value || "-"}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })
                     }
                   </TabsContent>
 

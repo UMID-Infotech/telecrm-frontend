@@ -1185,19 +1185,45 @@ export default function AgentLeadDetailPage() {
                   label: "Created",
                   value: formatDateTime(lead?.createdAt),
                 },
-              ].map((row) => (
-                <div
-                  key={row.label}
-                  className="border-b border-slate-50 pb-2 last:border-0 last:pb-0"
-                >
-                  <dt className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                    {row.label}
-                  </dt>
-                  <dd className="text-sm font-semibold text-slate-800 break-words mt-0.5">
-                    {row.value}
-                  </dd>
-                </div>
-              ))
+              ].map((row) => {
+                const isLinkField =
+                  row.label === "Website Link" || row.label === "Source Link";
+
+                const href =
+                  row.value && /^https?:\/\//i.test(row.value)
+                    ? row.value
+                    : row.value
+                      ? `https://${row.value}`
+                      : "";
+
+                return (
+                  <div
+                    key={row.label}
+                    className="border-b border-slate-50 pb-2 last:border-0 last:pb-0"
+                  >
+                    <dt className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      {row.label}
+                    </dt>
+
+                    <dd className="text-sm font-semibold mt-0.5 break-words">
+                      {isLinkField && row.value ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline break-all"
+                        >
+                          {row.value}
+                        </a>
+                      ) : (
+                        <span className="text-slate-800">
+                          {row.value || "-"}
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                );
+              })
             }
           </dl>
         </Section>
