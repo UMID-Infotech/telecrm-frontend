@@ -50,13 +50,22 @@ type Outcome =
 type NotConnReason = "SWITCHED_OFF" | "NOT_REACHABLE" | "DNP" | "OTHERS";
 type MeetingPlatform = "GOOGLE_MEET" | "ZOOM" | "PERSONAL";
 
+// Loss reasons matching the backend's accepted values
+type LossReason =
+  | "HIGH_PRICING"
+  | "COMPETITOR"
+  | "NOT_INTERESTED"
+  | "WRONG_CONTACT"
+  | "GHOSTED"
+  | "MISSING_FEATURES"
+  | "OTHER";
+
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   leadId: string;
   leadName: string;
   onSuccess: () => void;
-  /** Optional agent personal meeting link, used when platform = Personal Link */
   personalMeetingLink?: string;
 }
 
@@ -66,7 +75,6 @@ const MEET_LINKS: Record<MeetingPlatform, string> = {
   PERSONAL: "",
 };
 
-// minimum value for datetime-local (now, in local TZ)
 function nowLocalIso(): string {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -95,6 +103,7 @@ export function FollowUpFormDialog({
   const [reason, setReason] = useState<NotConnReason | "">("");
   // Screen 4 — Follow Up
   const [followUpAt, setFollowUpAt] = useState("");
+  const [callDuration, setCallDuration] = useState<string>("45");
   // Screen 5 — Session Booked
   const [sessionAt, setSessionAt] = useState("");
   const [platform, setPlatform] = useState<MeetingPlatform | "">("");
@@ -107,23 +116,17 @@ export function FollowUpFormDialog({
   const [projectValue, setProjectValue] = useState("");
   const [saleDate, setSaleDate] = useState("");
   const [serviceBrief, setServiceBrief] = useState("");
+  // Screen 8 — Not Interested: backend requires lossReason
+  const [lossReason, setLossReason] = useState<LossReason | "">("");
   // Shared
   const [whatsappSent, setWhatsappSent] = useState(false);
   const [comments, setComments] = useState("");
-
-  const [callDuration, setCallDuration] = useState<string>("45");
-  
 
   const meetingLink = useMemo(() => {
     if (!platform) return "";
     return platform === "PERSONAL" ? personalMeetingLink : MEET_LINKS[platform];
   }, [platform, personalMeetingLink]);
 
-  // Which screen are we on?
-  // 1 -> pick connection
-  // 2 -> pick outcome (connection=CONNECTED)
-  // 3 -> not connected form
-  // 4..8 -> outcome forms
   const screen: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 = useMemo(() => {
     if (!connection) return 1;
     if (connection === "NOT_CONNECTED") return 3;
@@ -147,6 +150,7 @@ export function FollowUpFormDialog({
     setOutcome("");
     setReason("");
     setFollowUpAt("");
+    setCallDuration("45");
     setSessionAt("");
     setPlatform("");
     setQuotationTitle("");
@@ -156,6 +160,7 @@ export function FollowUpFormDialog({
     setProjectValue("");
     setSaleDate("");
     setServiceBrief("");
+    setLossReason("");
     setWhatsappSent(false);
     setComments("");
   };
@@ -198,11 +203,7 @@ export function FollowUpFormDialog({
           ...payload,
           type: "CALL_LOG",
           callDisposition:
-            reason === "SWITCHED_OFF"
-              ? "SWITCHED_OFF"
-              : reason === "NOT_REACHABLE"
-                ? "NOT_REACHABLE"
-                : "NOT_REACHABLE",
+            reason === "SWITCHED_OFF" ? "SWITCHED_OFF" : "NOT_REACHABLE",
           notConnectedReason: reason,
           whatsappSent,
           notes: comments.trim() || `Not connected — ${reason}`,
@@ -308,11 +309,18 @@ export function FollowUpFormDialog({
           notes: `Sale Done — ${projectName.trim()} (₹${pv})`,
         };
       } else if (screen === 8) {
+        // Backend requires lossReason when statusAfter is NOT_INTERESTED
+        if (!lossReason) {
+          showToast("Please select a closure reason", "destructive");
+          setLoading(false);
+          return;
+        }
         payload = {
           ...payload,
           type: "STATUS_CHANGE",
           statusAfter: "NOT_INTERESTED",
-          notes: comments.trim() || "Marked as Not Interested",
+          lossReason,
+          notes: comments.trim() || `Marked as Not Interested — ${lossReason}`,
         };
       } else {
         setLoading(false);
@@ -651,9 +659,52 @@ export function FollowUpFormDialog({
               </>
             )}
 
-            {/* Screen 8 — Not Interested */}
+            {/* Screen 8 — Not Interested: now requires lossReason (backend validation) */}
             {screen === 8 && (
-              <CommentsRow value={comments} onChange={setComments} required />
+              <>
+                <div className="space-y-2">
+                  <Label>
+                    Closure Reason{" "}
+                    <span className="text-rose-500 text-xs font-normal">
+                      (required)
+                    </span>
+                  </Label>
+                  <Select
+                    value={lossReason}
+                    onValueChange={(v) => setLossReason(v as LossReason)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="HIGH_PRICING">
+                        High Pricing / Budget Constraints
+                      </SelectItem>
+                      <SelectItem value="COMPETITOR">
+                        Went with Competitor
+                      </SelectItem>
+                      <SelectItem value="NOT_INTERESTED">
+                        Not Interested / Spam
+                      </SelectItem>
+                      <SelectItem value="WRONG_CONTACT">
+                        Wrong Contact Information
+                      </SelectItem>
+                      <SelectItem value="GHOSTED">
+                        No Response / Ghosted
+                      </SelectItem>
+                      <SelectItem value="MISSING_FEATURES">
+                        Product Features Missing
+                      </SelectItem>
+                      <SelectItem value="OTHER">Other Reason</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <CommentsRow
+                  value={comments}
+                  onChange={setComments}
+                  placeholder="Any additional context about why they're not interested…"
+                />
+              </>
             )}
           </div>
 
@@ -694,14 +745,17 @@ function WhatsAppRow({
     </label>
   );
 }
+
 function CommentsRow({
   value,
   onChange,
   required,
+  placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
+  placeholder?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -717,7 +771,7 @@ function CommentsRow({
         rows={3}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Add any notes about this interaction…"
+        placeholder={placeholder ?? "Add any notes about this interaction…"}
       />
     </div>
   );

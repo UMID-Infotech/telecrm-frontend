@@ -1,9 +1,6 @@
 // teleCRM/components/agent/for-mobile/follow-up-form-dialog.tsx
 "use client";
 
-// NOTE: Logic is identical to ../for-desktop/follow-up-form-dialog.tsx.
-// Re-export and override layout for mobile bottom-sheet ergonomics.
-
 import { useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import {
@@ -50,6 +47,16 @@ type Outcome =
   | "NOT_INTERESTED";
 type NotConnReason = "SWITCHED_OFF" | "NOT_REACHABLE" | "DNP" | "OTHERS";
 type MeetingPlatform = "GOOGLE_MEET" | "ZOOM" | "PERSONAL";
+
+// Loss reasons that match the backend's accepted values
+type LossReason =
+  | "HIGH_PRICING"
+  | "COMPETITOR"
+  | "NOT_INTERESTED"
+  | "WRONG_CONTACT"
+  | "GHOSTED"
+  | "MISSING_FEATURES"
+  | "OTHER";
 
 interface Props {
   open: boolean;
@@ -103,6 +110,9 @@ export function FollowUpFormDialog({
   const [comments, setComments] = useState("");
   const [callDuration, setCallDuration] = useState<string>("45");
 
+  // Screen 8 — Not Interested: backend requires lossReason
+  const [lossReason, setLossReason] = useState<LossReason | "">("");
+
   const meetingLink = useMemo(() => {
     if (!platform) return "";
     return platform === "PERSONAL" ? personalMeetingLink : MEET_LINKS[platform];
@@ -143,6 +153,7 @@ export function FollowUpFormDialog({
     setWhatsappSent(false);
     setComments("");
     setCallDuration("45");
+    setLossReason("");
   };
 
   const close = () => {
@@ -170,6 +181,7 @@ export function FollowUpFormDialog({
     setLoading(true);
     try {
       let payload: Record<string, any> = { leadId };
+
       if (screen === 3) {
         if (!reason) {
           showToast("Please select a reason", "destructive");
@@ -286,11 +298,18 @@ export function FollowUpFormDialog({
           notes: `Sale Done — ${projectName.trim()} (₹${pv})`,
         };
       } else if (screen === 8) {
+        // Backend requires lossReason when statusAfter is NOT_INTERESTED
+        if (!lossReason) {
+          showToast("Please select a closure reason", "destructive");
+          setLoading(false);
+          return;
+        }
         payload = {
           ...payload,
           type: "STATUS_CHANGE",
           statusAfter: "NOT_INTERESTED",
-          notes: comments.trim() || "Marked as Not Interested",
+          lossReason,
+          notes: comments.trim() || `Marked as Not Interested — ${lossReason}`,
         };
       } else {
         setLoading(false);
@@ -401,9 +420,7 @@ export function FollowUpFormDialog({
                     <PhoneOff size={22} />
                   </div>
                   <div className="flex-1">
-                    <div className="font-bold text-slate-900">
-                      Not Connected
-                    </div>
+                    <div className="font-bold text-slate-900">Not Connected</div>
                     <div className="text-xs text-slate-500 mt-0.5">
                       Couldn't reach them
                     </div>
@@ -481,9 +498,7 @@ export function FollowUpFormDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="SWITCHED_OFF">Switched Off</SelectItem>
-                      <SelectItem value="NOT_REACHABLE">
-                        Not Reachable
-                      </SelectItem>
+                      <SelectItem value="NOT_REACHABLE">Not Reachable</SelectItem>
                       <SelectItem value="DNP">Did Not Pick (DNP)</SelectItem>
                       <SelectItem value="OTHERS">Others</SelectItem>
                     </SelectContent>
@@ -676,16 +691,50 @@ export function FollowUpFormDialog({
               </>
             )}
 
+            {/* ── Screen 8: Not Interested — now includes lossReason (required by backend) ── */}
             {screen === 8 && (
-              <Field label="Comments">
-                <Textarea
-                  rows={4}
-                  className="rounded-xl"
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  placeholder="Why are they not interested?"
-                />
-              </Field>
+              <>
+                <Field label="Closure Reason">
+                  <Select
+                    value={lossReason}
+                    onValueChange={(v) => setLossReason(v as LossReason)}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue placeholder="Select a reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="HIGH_PRICING">
+                        High Pricing / Budget Constraints
+                      </SelectItem>
+                      <SelectItem value="COMPETITOR">
+                        Went with Competitor
+                      </SelectItem>
+                      <SelectItem value="NOT_INTERESTED">
+                        Not Interested / Spam
+                      </SelectItem>
+                      <SelectItem value="WRONG_CONTACT">
+                        Wrong Contact Information
+                      </SelectItem>
+                      <SelectItem value="GHOSTED">
+                        No Response / Ghosted
+                      </SelectItem>
+                      <SelectItem value="MISSING_FEATURES">
+                        Product Features Missing
+                      </SelectItem>
+                      <SelectItem value="OTHER">Other Reason</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Comments" optional>
+                  <Textarea
+                    rows={4}
+                    className="rounded-xl"
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                    placeholder="Why are they not interested?"
+                  />
+                </Field>
+              </>
             )}
           </div>
 
@@ -736,6 +785,7 @@ function Field({
     </div>
   );
 }
+
 function WaRow({
   value,
   onChange,

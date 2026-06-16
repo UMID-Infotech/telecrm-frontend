@@ -17,6 +17,14 @@ interface Lead {
   currentJourneyStatus?: string;
   createdAt?: string;
   data?: Record<string, any>;
+  // New: conversations (from LeadConversation model)
+  conversations?: Array<{
+    id: string;
+    type: string;
+    callDisposition?: string | null;
+    createdAt: string;
+  }>;
+  // Legacy: activities (from LeadActivity model — may still be present)
   activities?: Array<{
     id: string;
     callType: string;
@@ -66,14 +74,13 @@ interface StatCardProps {
   label: string;
   value: number | string;
   sub?: string;
-  accent: string; // tailwind bg class for the top stripe
+  accent: string;
   icon: React.ReactNode;
 }
 
 function StatCard({ label, value, sub, accent, icon }: StatCardProps) {
   return (
     <div className="relative bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col min-w-0">
-      {/* accent stripe */}
       <div className={`h-1 w-full ${accent}`} />
       <div className="p-4 flex items-start gap-3 flex-1">
         <div
@@ -97,138 +104,71 @@ function StatCard({ label, value, sub, accent, icon }: StatCardProps) {
   );
 }
 
-// ── icons (inline SVG, no dep) ────────────────────────────────────────────────
+// ── icons ─────────────────────────────────────────────────────────────────────
 const IconUsers = () => (
-  <svg
-    className="w-5 h-5 text-blue-600"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 015-3.87M12 12a4 4 0 100-8 4 4 0 000 8z"
-    />
+  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 015-3.87M12 12a4 4 0 100-8 4 4 0 000 8z" />
   </svg>
 );
 const IconCheckCircle = () => (
-  <svg
-    className="w-5 h-5 text-green-600"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
+  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 const IconXCircle = () => (
-  <svg
-    className="w-5 h-5 text-red-500"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
+  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 const IconClock = () => (
-  <svg
-    className="w-5 h-5 text-orange-500"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
+  <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 const IconCalendar = () => (
-  <svg
-    className="w-5 h-5 text-purple-600"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-    />
+  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 const IconTrophy = () => (
-  <svg
-    className="w-5 h-5 text-yellow-600"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-    />
+  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
   </svg>
 );
 const IconStack = () => (
-  <svg
-    className="w-5 h-5 text-blue-500"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-    />
+  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
   </svg>
 );
 const IconUserCheck = () => (
-  <svg
-    className="w-5 h-5 text-emerald-600"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-    />
+  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 );
 const IconChevronDown = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-  >
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
   </svg>
 );
+
+// ── Connected dispositions (mirrors backend logic) ────────────────────────────
+// These CallDisposition values count as "connected" calls
+const CONNECTED_DISPOSITIONS = new Set([
+  "CONNECTED",
+  "INTERESTED",
+  "CALLBACK_REQUESTED",
+  "FOLLOW_UP_REQUIRED",
+  "CONVERTED",
+]);
+
+// These CallDisposition values count as "not connected"
+const NOT_CONNECTED_DISPOSITIONS = new Set([
+  "NOT_REACHABLE",
+  "SWITCHED_OFF",
+  "BUSY",
+  "WRONG_NUMBER",
+  "NOT_INTERESTED",
+]);
 
 // ── main page ─────────────────────────────────────────────────────────────────
 export default function ManagerDashboardPage() {
@@ -249,7 +189,7 @@ export default function ManagerDashboardPage() {
       setLeads(leadsRes.data?.data ?? leadsRes.data ?? []);
       setAgents(agentsRes.data?.data ?? agentsRes.data ?? []);
     } catch {
-      // silent — dashboard is best-effort
+      // silent
     } finally {
       setLoading(false);
     }
@@ -266,22 +206,60 @@ export default function ManagerDashboardPage() {
       (l) => l.distributionStage === "AGENT_OWNED",
     );
 
-    // For activity-based stats we filter by the date range using lead createdAt
-    // or activity calledAt (fall back to lead createdAt).
+    // Leads created/updated in the selected date range
+    // We use createdAt for range filtering on the lead itself
     const rangedLeads = leads.filter((l) =>
       inRange(l.createdAt, dateFrom, dateTo),
     );
 
-    // Connected: leads where at least one activity has outcome CONNECTED in range
-    const connectedLeads = rangedLeads.filter((l) =>
-      (l.activities ?? []).some(
+    // ── Connected: leads where at least one conversation in range has a
+    //    "connected" disposition (using LeadConversation.callDisposition)
+    //    Falls back to legacy LeadActivity.outcome === "CONNECTED" if present
+    const connectedLeads = rangedLeads.filter((l) => {
+      // New path: check conversations
+      const convs = l.conversations ?? [];
+      const hasConnectedConv = convs.some((c) => {
+        const inDateRange = inRange(c.createdAt, dateFrom, dateTo);
+        const isConnected =
+          c.callDisposition != null &&
+          CONNECTED_DISPOSITIONS.has(c.callDisposition);
+        return inDateRange && isConnected;
+      });
+      if (hasConnectedConv) return true;
+
+      // Legacy fallback: check activities
+      const acts = l.activities ?? [];
+      return acts.some(
         (a) =>
           a.outcome === "CONNECTED" && inRange(a.calledAt, dateFrom, dateTo),
-      ),
-    );
+      );
+    });
 
-    // Not connected: leads in range where ALL activities are NOT_CONNECTED (and has at least one)
+    // ── Not Connected: leads where ALL call-type conversations in range are
+    //    "not connected" dispositions (and at least one exists)
     const notConnectedLeads = rangedLeads.filter((l) => {
+      // New path
+      const convs = (l.conversations ?? []).filter(
+        (c) =>
+          c.type === "CALL_LOG" && inRange(c.createdAt, dateFrom, dateTo),
+      );
+      if (convs.length > 0) {
+        const allNotConnected = convs.every(
+          (c) =>
+            c.callDisposition != null &&
+            NOT_CONNECTED_DISPOSITIONS.has(c.callDisposition),
+        );
+        if (allNotConnected) return true;
+        // If ANY is connected, exclude from "not connected" bucket
+        const hasConnected = convs.some(
+          (c) =>
+            c.callDisposition != null &&
+            CONNECTED_DISPOSITIONS.has(c.callDisposition),
+        );
+        if (hasConnected) return false;
+      }
+
+      // Legacy fallback
       const acts = (l.activities ?? []).filter((a) =>
         inRange(a.calledAt, dateFrom, dateTo),
       );
@@ -290,12 +268,12 @@ export default function ManagerDashboardPage() {
       );
     });
 
-    // Follow-ups scheduled in range
+    // ── Follow-ups scheduled in range
     const followUpLeads = rangedLeads.filter((l) =>
       (l.followUps ?? []).some((f) => inRange(f.followUpAt, dateFrom, dateTo)),
     );
 
-    // Booked session = QUALIFIED or INTERESTED status in range (interpreted as "session booked")
+    // ── Booked session = qualified/interested/negotiation status in range
     const bookedLeads = rangedLeads.filter(
       (l) =>
         l.currentJourneyStatus === "QUALIFIED" ||
@@ -303,7 +281,7 @@ export default function ManagerDashboardPage() {
         l.currentJourneyStatus === "NEGOTIATION",
     );
 
-    // Converted (revenue) in range
+    // ── Converted in range
     const convertedLeads = rangedLeads.filter(
       (l) => l.currentJourneyStatus === "CONVERTED",
     );
@@ -397,7 +375,7 @@ export default function ManagerDashboardPage() {
 
   return (
     <div className="p-3 sm:p-6 space-y-5 max-w-7xl mx-auto">
-      {/* ── page heading ── */}
+      {/* page heading */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
           Manager Dashboard
@@ -407,7 +385,7 @@ export default function ManagerDashboardPage() {
         </p>
       </div>
 
-      {/* ── date-range filter ── */}
+      {/* date-range filter */}
       <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
         <button
           type="button"
@@ -415,34 +393,21 @@ export default function ManagerDashboardPage() {
           className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           <span className="flex items-center gap-2">
-            <svg
-              className="w-4 h-4 text-slate-400"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
-              />
+            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
             </svg>
             <span>Date Range</span>
             <span className="text-xs font-normal text-slate-400">
               {formatDate(dateFrom)} – {formatDate(dateTo)}
             </span>
           </span>
-          <span
-            className={`text-slate-400 transition-transform duration-200 ${filterOpen ? "rotate-180" : ""}`}
-          >
+          <span className={`text-slate-400 transition-transform duration-200 ${filterOpen ? "rotate-180" : ""}`}>
             <IconChevronDown />
           </span>
         </button>
 
         {filterOpen && (
           <div className="border-t border-slate-100 px-4 py-4 space-y-4">
-            {/* quick presets */}
             <div className="flex flex-wrap gap-2">
               {[
                 { label: "Today", days: 0 },
@@ -461,12 +426,9 @@ export default function ManagerDashboardPage() {
               ))}
             </div>
 
-            {/* custom range */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-500">
-                  From
-                </label>
+                <label className="text-xs font-medium text-slate-500">From</label>
                 <input
                   type="date"
                   value={dateFrom}
@@ -491,14 +453,11 @@ export default function ManagerDashboardPage() {
         )}
       </div>
 
-      {/* ── stat cards ── */}
+      {/* stat cards */}
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl border border-slate-100 shadow-sm h-24 animate-pulse"
-            />
+            <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm h-24 animate-pulse" />
           ))}
         </div>
       ) : (
@@ -509,19 +468,15 @@ export default function ManagerDashboardPage() {
         </div>
       )}
 
-      {/* ── section divider label ── */}
       {!loading && (
         <p className="text-[11px] text-slate-400 text-right">
           Activity stats for {formatDate(dateFrom)}
           {dateFrom !== dateTo ? ` – ${formatDate(dateTo)}` : ""}
           &nbsp;·&nbsp;
-          {
-            leads.filter((l) => inRange(l.createdAt, dateFrom, dateTo)).length
-          }{" "}
+          {leads.filter((l) => inRange(l.createdAt, dateFrom, dateTo)).length}{" "}
           leads in period
         </p>
       )}
     </div>
   );
 }
-
