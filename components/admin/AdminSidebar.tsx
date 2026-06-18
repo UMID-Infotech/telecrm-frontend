@@ -70,13 +70,6 @@ export default function AdminSidebar() {
           <FiBookOpen size={18} />
           <span>Guide Blogs</span>
         </Link>
-        <Link
-          href="/admin/activity-logs"
-          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800"
-        >
-          <FiBookOpen size={18} />
-          <span>Activity logs</span>
-        </Link>
       </nav>
     </aside>
   );
