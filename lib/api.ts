@@ -5,8 +5,13 @@ import { getToken, clearAuth } from "./auth";
 
 /**
  * Base API URL
+ * - Production: /api-proxy (Vercel rewrites proxy to backend, no CORS)
+ * - Development: NEXT_PUBLIC_API_URL from .env.local
  */
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "/api-proxy"
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003";
 
 /**
  * Axios Instance
