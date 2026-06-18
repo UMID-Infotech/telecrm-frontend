@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api-proxy/:path*",
-      "destination": "https://telecrm.umidinfotech.in/:path*"
+      "destination": "http://telecrm.umidinfotech.in:3003/:path*"
     }
   ]
 }
