@@ -36,7 +36,7 @@ interface Conversation {
   type: string;
   callDisposition?: string | null;
   notes?: string | null;
-  followUpDate?: string | null;
+  followUpDate?: string | null; // date the agent typed when scheduling a follow-up
   statusBefore?: string | null;
   statusAfter?: string | null;
   callDuration?: number | null;
@@ -97,7 +97,7 @@ const thirtyDaysAgo = () => {
   return d.toISOString().slice(0, 10);
 };
 const inRange = (
-  iso: string | undefined,
+  iso: string | undefined | null,
   from: string,
   to: string,
 ): boolean => {
@@ -121,17 +121,6 @@ const formatDateTime = (iso: string) =>
   });
 
 // ─── Date-range filtering for the Team Pipeline table ─────────────────────────
-// The stat cards above already use `inRange()` to limit their counts to the
-// selected [dateFrom, dateTo] window. The two helpers below apply that exact
-// same window to every lead's nested conversation / follow-up / status-history
-// / call-activity arrays, so the "Team Pipeline" table's interaction counts,
-// last-interaction preview, and pending follow-up badges line up with the
-// stat cards above it.
-//
-// IMPORTANT: leads themselves are never hidden by the date filter — only the
-// activity *inside* each lead is windowed. This mirrors how the "Team Pool"
-// and "Agent Assigned" stat cards already show all-time totals while
-// "Connected" / "Not Connected" / "Follow-ups" are windowed by date.
 
 function filterLeadTimelineByDateRange(
   lead: Lead,
@@ -354,7 +343,6 @@ function ConversationTimeline({
   followUps: FollowUp[];
   statusHistory: StatusHistory[];
 }) {
-  // Merge all events into one sorted timeline
   type TimelineEvent =
     | { kind: "conv"; data: Conversation; ts: string }
     | { kind: "followup"; data: FollowUp; ts: string }
@@ -388,10 +376,9 @@ function ConversationTimeline({
 
   return (
     <div className="relative pl-6">
-      {/* Vertical line */}
       <div className="absolute left-2 top-0 bottom-0 w-px bg-slate-200" />
       <div className="space-y-3">
-        {events.map((event, idx) => {
+        {events.map((event) => {
           if (event.kind === "conv") {
             const conv = event.data;
             const cfg = CONV_CONFIG[conv.type] ?? CONV_CONFIG.INTERNAL_NOTE;
@@ -488,7 +475,6 @@ function ConversationTimeline({
             );
           }
 
-          // status history
           const sh = event.data;
           return (
             <div key={`sh-${sh.id}`} className="relative">
@@ -550,14 +536,12 @@ function LeadCard({
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      {/* Lead header */}
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
         className="w-full text-left p-4 hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-start gap-3">
-          {/* Avatar */}
           <div className="shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
             {lead.name?.[0]?.toUpperCase() ?? "?"}
           </div>
@@ -591,7 +575,6 @@ function LeadCard({
             </div>
           </div>
 
-          {/* Expand toggle */}
           <div
             className={`shrink-0 text-slate-400 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
           >
@@ -611,7 +594,6 @@ function LeadCard({
           </div>
         </div>
 
-        {/* Last interaction preview */}
         {lastConv && !expanded && (
           <div className="mt-2 ml-12 text-[11px] text-slate-500 bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-100 truncate">
             <span className="font-medium">Last:</span>{" "}
@@ -634,10 +616,8 @@ function LeadCard({
         )}
       </button>
 
-      {/* Expanded: full lead data + conversation history */}
       {expanded && (
         <div className="border-t border-slate-100 bg-slate-50">
-          {/* Lead extra info */}
           {lead.data && Object.keys(lead.data).length > 0 && (
             <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-2 border-b border-slate-100 bg-white">
               {Object.entries(lead.data).map(([k, v]) =>
@@ -655,7 +635,6 @@ function LeadCard({
             </div>
           )}
 
-          {/* Timeline */}
           <div className="px-4 py-4">
             <p className="text-xs font-semibold text-slate-600 mb-3 flex items-center gap-1.5">
               <svg
@@ -688,7 +667,7 @@ function LeadCard({
   );
 }
 
-// ─── Agent Row (expandable, shows their leads) ────────────────────────────────
+// ─── Agent Row (expandable) ───────────────────────────────────────────────────
 
 function AgentSection({
   agent,
@@ -716,15 +695,24 @@ function AgentSection({
       ].includes(l.currentJourneyStatus ?? ""),
   ).length;
 
+  const untouchedLeads = agent.leads.filter((lead) => {
+    const hasConversation = (lead.conversations?.length ?? 0) > 0;
+    const hasActivity = (lead.activities?.length ?? 0) > 0;
+
+    return (
+      lead.currentJourneyStatus === "FRESH_LEAD" &&
+      !hasConversation &&
+      !hasActivity
+    );
+  }).length;
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      {/* Agent header */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
       >
-        {/* Avatar */}
         <div className="shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-sm font-bold">
           {agent.email?.[0]?.toUpperCase() ?? "A"}
         </div>
@@ -743,7 +731,6 @@ function AgentSection({
           <p className="text-[11px] text-slate-500">{agent.designation}</p>
         </div>
 
-        {/* Quick stats */}
         <div className="hidden sm:flex items-center gap-4 text-center shrink-0">
           <div>
             <p className="text-xs font-bold text-slate-800">
@@ -767,6 +754,15 @@ function AgentSection({
               Interactions
             </p>
           </div>
+          <div>
+            <p className="text-xs font-bold text-orange-600">
+              {untouchedLeads}
+            </p>
+            <p className="text-[9px] text-slate-400 uppercase tracking-wide">
+              Fresh
+            </p>
+          </div>
+
           <div>
             <p className="text-xs font-bold text-slate-500">
               {agent.activeTicketLimit}
@@ -796,7 +792,6 @@ function AgentSection({
         </div>
       </button>
 
-      {/* Mobile quick stats */}
       {!open && (
         <div className="sm:hidden flex items-center gap-4 px-4 pb-3 text-center">
           <div>
@@ -818,7 +813,6 @@ function AgentSection({
         </div>
       )}
 
-      {/* Leads list */}
       {open && (
         <div className="border-t border-slate-100 bg-slate-50 px-4 py-4 space-y-3">
           {agent.leads.length === 0 ? (
@@ -866,7 +860,6 @@ function TeamPanel({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      {/* Team header */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -909,10 +902,8 @@ function TeamPanel({
         </div>
       </button>
 
-      {/* Expanded content */}
       {open && (
         <div className="border-t border-slate-100">
-          {/* Tabs */}
           <div className="flex border-b border-slate-100 bg-slate-50 px-4">
             <button
               type="button"
@@ -940,7 +931,6 @@ function TeamPanel({
             )}
           </div>
 
-          {/* Tab content */}
           <div className="p-4 space-y-3">
             {tab === "agents" &&
               (team.members.length === 0 ? (
@@ -1149,7 +1139,7 @@ const IconChevronDown = () => (
   </svg>
 );
 
-// ─── Disposition/connected helpers (for stat card calcs) ──────────────────────
+// ─── Disposition/connected helpers ────────────────────────────────────────────
 
 const CONNECTED_SET = new Set([
   "CONNECTED",
@@ -1166,6 +1156,72 @@ const NOT_CONNECTED_SET = new Set([
   "NOT_INTERESTED",
 ]);
 
+// ─── Follow-up detection helper ───────────────────────────────────────────────
+//
+// A lead counts as a "follow-up" in the selected period if ANY of:
+//
+//  1. LeadFollowUp table: a row exists with followUpAt inside [from, to].
+//     All statuses count (PENDING / COMPLETED / MISSED / RESCHEDULED) because
+//     a completed or missed follow-up still happened in that window.
+//
+//  2. Conversation.followUpDate: the agent typed a follow-up date on any
+//     conversation log that lands inside [from, to]. This fires even if no
+//     formal LeadFollowUp row was created.
+//
+//  3. Status moved to FOLLOW_UP_SCHEDULED inside [from, to].
+//     Priority order:
+//       a. statusHistory.toStatus — most reliable; written by the system
+//          whenever the journey status changes.
+//       b. conversation.statusAfter — written by the agent during a call log;
+//          present when statusHistory rows are absent.
+//       c. currentJourneyStatus === "FOLLOW_UP_SCHEDULED" AND
+//          lead.updatedAt inside [from, to] — last resort when no history
+//          whatsoever is available.
+//
+// The whole thing is a single `.filter()` returning true/false per lead,
+// so the same lead is never counted twice regardless of how many signals fire.
+
+function isFollowUpInRange(lead: Lead, from: string, to: string): boolean {
+  // ── Signal 1: LeadFollowUp rows ──────────────────────────────────────────
+  if ((lead.followUps ?? []).some((f) => inRange(f.followUpAt, from, to))) {
+    return true;
+  }
+
+  // ── Signal 2: Conversation.followUpDate ──────────────────────────────────
+  if (
+    (lead.conversations ?? []).some((c) => inRange(c.followUpDate, from, to))
+  ) {
+    return true;
+  }
+
+  // ── Signal 3a: statusHistory transition → FOLLOW_UP_SCHEDULED ───────────
+  const history = lead.statusHistory ?? [];
+  if (history.length > 0) {
+    return history.some(
+      (s) =>
+        s.toStatus === "FOLLOW_UP_SCHEDULED" && inRange(s.createdAt, from, to),
+    );
+  }
+
+  // ── Signal 3b: conversation.statusAfter → FOLLOW_UP_SCHEDULED ───────────
+  const convs = lead.conversations ?? [];
+  if (
+    convs.some(
+      (c) =>
+        c.statusAfter === "FOLLOW_UP_SCHEDULED" &&
+        inRange(c.createdAt, from, to),
+    )
+  ) {
+    return true;
+  }
+
+  // ── Signal 3c: currentJourneyStatus + updatedAt (last resort) ───────────
+  return (
+    lead.currentJourneyStatus === "FOLLOW_UP_SCHEDULED" &&
+    inRange(lead.updatedAt, from, to)
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ManagerDashboardPage() {
@@ -1179,7 +1235,6 @@ export default function ManagerDashboardPage() {
   const [dateTo, setDateTo] = useState(today());
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ── Fetch leads + agents (for stat cards)
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -1196,7 +1251,6 @@ export default function ManagerDashboardPage() {
     }
   }, []);
 
-  // ── Fetch full team overview
   const fetchTeamOverview = useCallback(async () => {
     setOverviewLoading(true);
     try {
@@ -1214,21 +1268,12 @@ export default function ManagerDashboardPage() {
     fetchTeamOverview();
   }, [fetchData, fetchTeamOverview]);
 
-  // ── Derived stats
   const stats = useMemo(() => {
-    // Pool / Assigned are always all-time totals (no date filter)
     const poolLeads = leads.filter((l) => l.distributionStage === "L2_POOL");
     const assignedLeads = leads.filter(
       (l) => l.distributionStage === "AGENT_OWNED",
     );
 
-    // Activity-based stats: scan ALL leads (not just those created in range),
-    // but check whether the activity/event itself falls in [dateFrom, dateTo].
-    // This is the key fix — a lead created months ago can have a session booked
-    // yesterday, and we must count that.
-
-    // Connected: any lead that had at least one call with a connected disposition
-    // in the selected date range
     const connectedLeads = leads.filter((l) => {
       const convs = l.conversations ?? [];
       if (
@@ -1246,14 +1291,11 @@ export default function ManagerDashboardPage() {
       );
     });
 
-    // Not Connected: any lead whose ALL calls in the date range were not-connected
-    // (and had at least one call in that range), with no connected call in the range
     const notConnectedLeads = leads.filter((l) => {
       const convs = (l.conversations ?? []).filter(
         (c) => c.type === "CALL_LOG" && inRange(c.createdAt, dateFrom, dateTo),
       );
       if (convs.length > 0) {
-        // If any call in range was connected, exclude from not-connected
         if (
           convs.some(
             (c) =>
@@ -1261,7 +1303,6 @@ export default function ManagerDashboardPage() {
           )
         )
           return false;
-        // If all calls in range were not-connected dispositions
         if (
           convs.every(
             (c) =>
@@ -1279,27 +1320,15 @@ export default function ManagerDashboardPage() {
       );
     });
 
-    // Follow-ups: any lead with a follow-up scheduled within the date range.
-    // Basis: the LeadFollowUp table (lead.followUps[].followUpAt) — a row is
-    // created whenever a follow-up call is scheduled for a lead, independent
-    // of the lead's currentJourneyStatus. Any status (PENDING / COMPLETED /
-    // MISSED / RESCHEDULED) counts here; this card answers "how many leads
-    // have a follow-up that falls in this window", not "how many are still
-    // pending" (that distinction is shown separately as a badge on each lead
-    // card in the Team Pipeline below).
-    //
-    // NOTE: unlike Connected/Not-Connected/Converted (which only ever look
-    // backwards), follow-ups are frequently scheduled for *future* dates.
-    // The date-range "To" field below no longer caps at today, so a range
-    // can be extended forward to include tomorrow's (or any upcoming)
-    // follow-up.
+    // ── Follow-ups ─────────────────────────────────────────────────────────
+    // Uses the combined helper above. Each lead is evaluated once (no
+    // double-counting). Checks: LeadFollowUp.followUpAt, Conversation.followUpDate,
+    // and the FOLLOW_UP_SCHEDULED status transition via statusHistory /
+    // conversation.statusAfter / currentJourneyStatus+updatedAt fallback.
     const followUpLeads = leads.filter((l) =>
-      (l.followUps ?? []).some((f) => inRange(f.followUpAt, dateFrom, dateTo)),
+      isFollowUpInRange(l, dateFrom, dateTo),
     );
 
-    // Booked Sessions: leads whose status history shows a transition TO a
-    // session-booked/qualified status within the date range.
-    // Fall back to checking currentJourneyStatus if statusHistory is absent.
     const BOOKED_STATUSES = new Set([
       "QUALIFIED",
       "INTERESTED",
@@ -1316,7 +1345,6 @@ export default function ManagerDashboardPage() {
             BOOKED_STATUSES.has(s.toStatus),
         );
       }
-      // Fallback: check conversations for status transitions in range
       const convs = l.conversations ?? [];
       if (
         convs.some(
@@ -1327,14 +1355,12 @@ export default function ManagerDashboardPage() {
         )
       )
         return true;
-      // Last resort: current status (only if lead was updated in range)
       return (
         BOOKED_STATUSES.has(l.currentJourneyStatus ?? "") &&
         inRange(l.updatedAt, dateFrom, dateTo)
       );
     });
 
-    // Converted: leads that transitioned to CONVERTED status in the date range
     const convertedLeads = leads.filter((l) => {
       const history = l.statusHistory ?? [];
       if (history.length > 0) {
@@ -1374,14 +1400,12 @@ export default function ManagerDashboardPage() {
   const applyPreset = (days: number) => {
     const todayStr = today();
     if (days === -1) {
-      // Yesterday
       const yest = new Date();
       yest.setDate(yest.getDate() - 1);
       const yestStr = yest.toISOString().slice(0, 10);
       setDateFrom(yestStr);
       setDateTo(yestStr);
     } else if (days === 0) {
-      // Today
       setDateFrom(todayStr);
       setDateTo(todayStr);
     } else {
@@ -1451,12 +1475,6 @@ export default function ManagerDashboardPage() {
     },
   ];
 
-  // ── Date-range + search filtered teams
-  // Step 1: window every lead's conversations / follow-ups / status-history /
-  //         call-activities to [dateFrom, dateTo] — the exact same window the
-  //         stat cards above already use.
-  // Step 2: apply the free-text search on top of that windowed data, so
-  //         searching only matches leads/agents within the selected period.
   const filteredTeams = useMemo(() => {
     const dateFilteredTeams = teams.map((team) =>
       filterTeamTimelineByDateRange(team, dateFrom, dateTo),
@@ -1502,7 +1520,6 @@ export default function ManagerDashboardPage() {
 
   return (
     <div className="p-3 sm:p-6 space-y-5 max-w-7xl mx-auto">
-      {/* Page heading */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
           Manager Dashboard
@@ -1590,9 +1607,8 @@ export default function ManagerDashboardPage() {
               </div>
             </div>
             <p className="text-[11px] text-slate-400">
-              Tip: extend "To" past today to bring upcoming scheduled
-              follow-ups into view — most other cards only ever show past
-              activity, but follow-ups are frequently scheduled ahead.
+              Tip: extend "To" past today to include upcoming scheduled
+              follow-ups.
             </p>
           </div>
         )}
@@ -1640,9 +1656,8 @@ export default function ManagerDashboardPage() {
         </p>
       )}
 
-      {/* ── Team Pipeline Section ─────────────────────────────────────────── */}
+      {/* Team Pipeline */}
       <div className="space-y-4">
-        {/* Section header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1">
             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -1669,7 +1684,6 @@ export default function ManagerDashboardPage() {
             </p>
           </div>
 
-          {/* Search */}
           <div className="relative">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"
@@ -1714,7 +1728,6 @@ export default function ManagerDashboardPage() {
             )}
           </div>
 
-          {/* Refresh */}
           <button
             type="button"
             onClick={fetchTeamOverview}
@@ -1738,7 +1751,6 @@ export default function ManagerDashboardPage() {
           </button>
         </div>
 
-        {/* Teams */}
         {overviewLoading ? (
           <div className="space-y-3">
             {[1, 2].map((i) => (
