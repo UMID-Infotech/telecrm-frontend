@@ -448,7 +448,7 @@ export default function AgentLeadsPage() {
     },
     {
       key: "LOST" as const,
-      label: "Lost / Closed",
+      label: "Lost / NI",
       count: leads.filter(
         (l) =>
           l.currentJourneyStatus === "LOST" ||
