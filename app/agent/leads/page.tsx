@@ -1,7 +1,7 @@
 // teleCRM/app/agent/leads/page.tsx
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -250,25 +250,40 @@ export default function AgentLeadsPage() {
   const [recordingUrl, setRecordingUrl] = useState("");
   const [callLoading, setCallLoading] = useState(false);
 
+  // ── FIX: keep a stable ref to the latest showToast so fetchLeads never
+  //    needs to change identity just because the toast hook re-renders on
+  //    every parent render. This is what was causing the infinite fetch loop. ──
+  const showToastRef = useRef(showToast);
+  useEffect(() => {
+    showToastRef.current = showToast;
+  }, [showToast]);
+
+  // ── FIX: prevents overlapping/duplicate requests if fetchLeads is ever
+  //    invoked again while a previous call is still in flight ──
+  const inFlightRef = useRef(false);
+
   // ── Data fetching ─────────────────────────────────────────────────────────
   const fetchLeads = useCallback(async () => {
+    if (inFlightRef.current) return; // guard against stacked duplicate calls
+    inFlightRef.current = true;
     setLoading(true);
     try {
       const res = await api.get("/agent/leads");
       setLeads(Array.isArray(res.data) ? res.data : []);
     } catch (err: any) {
-      showToast(
+      showToastRef.current(
         err?.response?.data?.message ?? "Failed to load assigned leads",
         "destructive",
       );
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
     }
-  }, [showToast]);
+  }, []); // ← FIX: stable identity forever — was previously [showToast]
 
   useEffect(() => {
     fetchLeads();
-  }, [fetchLeads]);
+  }, [fetchLeads]); // now genuinely runs only once on mount
 
   // ── Call dialog helpers ───────────────────────────────────────────────────
 
@@ -478,36 +493,6 @@ export default function AgentLeadsPage() {
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto min-h-screen bg-slate-50/50">
       {ToastComponent}
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      {/* <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Leads Workspace
-          </h1>
-          <p className="text-slate-500 text-sm mt-0.5 font-medium">
-            Search, sort, log calls, and track your active lead interactions
-            here.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={fetchLeads}
-            disabled={loading}
-            className="border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5"
-          >
-            <RotateCcw size={16} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </Button>
-          <Button
-            onClick={() => router.push("/leads/create")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
-          >
-            + Create New Lead
-          </Button>
-        </div>
-      </div> */}
-
       {/* ── Tabs ───────────────────────────────────────────────────────────── */}
 
       {/* Mobile: dropdown */}
@@ -677,9 +662,6 @@ export default function AgentLeadsPage() {
                           <h3 className="font-bold text-slate-800 text-base leading-tight truncate">
                             {lead.name}
                           </h3>
-                          {/* <p className="text-xs font-mono text-slate-400 mt-0.5 tracking-wider">
-                            {lead.phone}
-                          </p> */}
                           {lead.approvalStatus === "PENDING" && (
                             <span className="mt-1 inline-flex items-center gap-0.5 rounded-full bg-amber-50 text-amber-800 text-[10px] px-2 py-0.5 border border-amber-200">
                               <AlertCircle size={10} /> Pending Approval
